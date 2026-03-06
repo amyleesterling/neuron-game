@@ -993,8 +993,21 @@ function runGame() {
       ctx.restore();
     }
 
-    // Branches — path[0] is soma center, so line is always connected
+    // Cell zone fill — shows actual collision hitbox per grid cell
     var bi, b, pi, head, hx, hy;
+    if (!isDemo) {
+      for (bi = 0; bi < branches.length; bi++) {
+        b = branches[bi];
+        if (b.path.length < 1) continue;
+        var isAct2 = (bi === activeIdx);
+        ctx.fillStyle = isAct2 ? 'rgba(79,195,247,0.09)' : 'rgba(30,120,200,0.055)';
+        for (pi = 0; pi < b.path.length; pi++) {
+          ctx.fillRect(b.path[pi].x * CELL, b.path[pi].y * CELL, CELL, CELL);
+        }
+      }
+    }
+
+    // Branches — path[0] is soma center, so line is always connected
     for (bi = 0; bi < branches.length; bi++) {
       b = branches[bi];
       if (b.path.length < 2) continue;
@@ -1002,7 +1015,7 @@ function runGame() {
       ctx.save();
       var bw = isDemo
         ? (isActive ? Math.max(CELL * 0.15, 1.5) : Math.max(CELL * 0.1, 1))
-        : (isActive ? Math.max(CELL * 0.35, 3) : Math.max(CELL * 0.25, 2.5));
+        : (isActive ? Math.max(CELL * 0.2, 2.5) : Math.max(CELL * 0.15, 2));
       ctx.lineWidth = bw;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';

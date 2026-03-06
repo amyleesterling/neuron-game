@@ -633,19 +633,48 @@ function runGame() {
     var encodedText = encodeURIComponent(shareText);
     var encodedUrl = encodeURIComponent(APP_URL);
 
-    // On iOS, try native share sheet (must be triggered directly from tap, not async)
-    if (navigator.share) {
-      var shareData = {title: 'NEURON \u2014 ' + score + ' synapses', text: shareText, url: APP_URL};
-      navigator.share(shareData).catch(function() {});
-      return;
-    }
+    captureNeuronImage(function(blob) {
+      if (!blob) {
+        // Fallback if capture fails — share without image
+        if (platform === 'x') {
+          window.open('https://twitter.com/intent/tweet?text=' + encodedText, '_blank');
+        } else {
+          window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodedUrl, '_blank');
+        }
+        return;
+      }
 
-    // Desktop fallback — open directly (synchronous, no popup block)
-    if (platform === 'x') {
-      window.open('https://twitter.com/intent/tweet?text=' + encodedText, '_blank');
-    } else {
-      window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodedUrl, '_blank');
-    }
+      var file = new File([blob], 'neuron-score.png', {type: 'image/png'});
+
+      // Try native share with image (mobile / supported browsers)
+      if (navigator.share && navigator.canShare && navigator.canShare({files: [file]})) {
+        navigator.share({
+          title: 'NEURON \u2014 ' + score + ' synapses',
+          text: shareText,
+          url: APP_URL,
+          files: [file]
+        }).catch(function() {});
+        return;
+      }
+
+      // Desktop: download the image, then open share URL
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'neuron-score.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+
+      // Small delay so download starts before popup
+      setTimeout(function() {
+        if (platform === 'x') {
+          window.open('https://twitter.com/intent/tweet?text=' + encodedText, '_blank');
+        } else {
+          window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodedUrl, '_blank');
+        }
+      }, 300);
+    });
   }
 
   // Main button

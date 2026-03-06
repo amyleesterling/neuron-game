@@ -23,7 +23,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .hudLabel { display:block; font-size:7px; letter-spacing:0.15em; opacity:0.4; text-transform:uppercase; }
 .hudVal { display:block; font-size:19px; font-weight:700; color:#4fc3f7; }
 #gameCanvas { position:fixed; top:0; left:0; display:block; }
-#overlay { position:fixed; inset:0; background:rgba(0,0,0,0.93); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; z-index:20; text-align:center; padding:32px; }
+#overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; z-index:20; text-align:center; padding:32px; }
 #overlay h1 { font-size:52px; font-weight:900; letter-spacing:0.15em; color:#4fc3f7; text-shadow:0 0 30px rgba(79,195,247,0.9); }
 .info { font-size:11px; line-height:2.3; opacity:0.5; text-transform:uppercase; letter-spacing:0.08em; }
 .bigScore { font-size:58px; font-weight:900; color:#ffe566; text-shadow:0 0 28px rgba(255,229,102,0.9); }
@@ -148,6 +148,121 @@ function runGame() {
     ROWS = Math.floor(CH / CELL);
   }
   resize();
+
+  // Background ambient dendrites for lobby/death screens
+  var bgDendrites = [];
+  var bgTimer = 0;
+
+  function spawnBgDendrite() {
+    // Pick random start along edges or from center area
+    var sx, sy, dx, dy;
+    var side = Math.floor(Math.random() * 5);
+    if (side === 0) { sx = Math.random() * CW; sy = 0; dx = (Math.random() - 0.5) * 2; dy = 1; }
+    else if (side === 1) { sx = Math.random() * CW; sy = CH; dx = (Math.random() - 0.5) * 2; dy = -1; }
+    else if (side === 2) { sx = 0; sy = Math.random() * CH; dx = 1; dy = (Math.random() - 0.5) * 2; }
+    else if (side === 3) { sx = CW; sy = Math.random() * CH; dx = -1; dy = (Math.random() - 0.5) * 2; }
+    else { sx = CW * 0.3 + Math.random() * CW * 0.4; sy = CH * 0.3 + Math.random() * CH * 0.4; var a = Math.random() * Math.PI * 2; dx = Math.cos(a); dy = Math.sin(a); }
+    var len = Math.sqrt(dx * dx + dy * dy);
+    dx /= len; dy /= len;
+    var spd = 1.5 + Math.random() * 2.5;
+    var hue = Math.random() < 0.7 ? '79,195,247' : '255,107,157';
+    bgDendrites.push({
+      pts: [{x: sx, y: sy}],
+      dx: dx, dy: dy,
+      spd: spd,
+      alpha: 0.08 + Math.random() * 0.12,
+      fade: 0.0003 + Math.random() * 0.0004,
+      col: hue,
+      turnTimer: 20 + Math.floor(Math.random() * 40),
+      turnCount: 0,
+      maxTurns: 2 + Math.floor(Math.random() * 4),
+      lineW: 1 + Math.random() * 1.5,
+      alive: true
+    });
+  }
+
+  function tickBgDendrites() {
+    var i, d, head, nx, ny;
+    bgTimer++;
+    // Spawn new dendrites periodically
+    if (bgTimer % 18 === 0 && bgDendrites.length < 25) {
+      spawnBgDendrite();
+    }
+    for (i = bgDendrites.length - 1; i >= 0; i--) {
+      d = bgDendrites[i];
+      if (!d.alive) { bgDendrites.splice(i, 1); continue; }
+      d.alpha -= d.fade;
+      if (d.alpha <= 0) { d.alive = false; continue; }
+      head = d.pts[d.pts.length - 1];
+      nx = head.x + d.dx * d.spd;
+      ny = head.y + d.dy * d.spd;
+      // Random turns
+      d.turnTimer--;
+      if (d.turnTimer <= 0 && d.turnCount < d.maxTurns) {
+        var ang = (Math.random() - 0.5) * Math.PI * 0.7;
+        var cdx = d.dx * Math.cos(ang) - d.dy * Math.sin(ang);
+        var cdy = d.dx * Math.sin(ang) + d.dy * Math.cos(ang);
+        d.dx = cdx; d.dy = cdy;
+        d.turnTimer = 15 + Math.floor(Math.random() * 35);
+        d.turnCount++;
+        // Chance to fork
+        if (Math.random() < 0.35 && bgDendrites.length < 25) {
+          var fAng = -ang * 0.8 + (Math.random() - 0.5) * 0.3;
+          var fdx = d.dx * Math.cos(fAng) - d.dy * Math.sin(fAng);
+          var fdy = d.dx * Math.sin(fAng) + d.dy * Math.cos(fAng);
+          bgDendrites.push({
+            pts: [{x: nx, y: ny}],
+            dx: fdx, dy: fdy,
+            spd: d.spd * (0.7 + Math.random() * 0.3),
+            alpha: d.alpha * 0.8,
+            fade: d.fade * 1.2,
+            col: d.col,
+            turnTimer: 20 + Math.floor(Math.random() * 30),
+            turnCount: 0,
+            maxTurns: 1 + Math.floor(Math.random() * 2),
+            lineW: d.lineW * 0.7,
+            alive: true
+          });
+        }
+      }
+      d.pts.push({x: nx, y: ny});
+      // Kill if off screen
+      if (nx < -50 || nx > CW + 50 || ny < -50 || ny > CH + 50) d.alive = false;
+      // Cap path length for performance
+      if (d.pts.length > 300) d.pts.shift();
+    }
+  }
+
+  function drawBgDendrites() {
+    var i, d, j;
+    for (i = 0; i < bgDendrites.length; i++) {
+      d = bgDendrites[i];
+      if (d.pts.length < 2 || !d.alive) continue;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(' + d.col + ',' + d.alpha + ')';
+      ctx.lineWidth = d.lineW;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = 'rgba(' + d.col + ',' + (d.alpha * 0.6) + ')';
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.moveTo(d.pts[0].x, d.pts[0].y);
+      for (j = 1; j < d.pts.length; j++) {
+        ctx.lineTo(d.pts[j].x, d.pts[j].y);
+      }
+      ctx.stroke();
+      // Bright tip
+      var tip = d.pts[d.pts.length - 1];
+      ctx.beginPath();
+      ctx.arc(tip.x, tip.y, d.lineW + 1, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(' + d.col + ',' + Math.min(d.alpha * 3, 0.5) + ')';
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // Seed initial bg dendrites
+  for (var si = 0; si < 8; si++) spawnBgDendrite();
 
   // Game variables — all plain, no shorthand methods
   var gState = 'menu';
@@ -765,6 +880,12 @@ function runGame() {
     ctx.clearRect(0, 0, CW, CH);
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, CW, CH);
+
+    // Background ambient dendrites (visible through overlay)
+    if (gState === 'menu' || gState === 'dead') {
+      tickBgDendrites();
+      drawBgDendrites();
+    }
 
     // Grid
     ctx.strokeStyle = 'rgba(79,195,247,0.04)';

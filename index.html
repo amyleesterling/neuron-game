@@ -97,7 +97,7 @@ function runGame() {
   var playerName = localStorage.getItem('neuron_name') || '';
 
   function fetchLeaderboard(callback) {
-    sb.from('neuron_leaderboard').select('name,score').order('score', {ascending: false}).limit(10)
+    sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(10)
       .then(function(res) { callback(res.data || []); })
       .catch(function() { callback([]); });
   }
@@ -105,7 +105,7 @@ function runGame() {
   function submitScore(name, sc, callback) {
     playerName = name;
     localStorage.setItem('neuron_name', name);
-    sb.from('neuron_leaderboard').insert({name: name, score: sc})
+    sb.from('neuron_snake_leaderboard').insert({name: name, score: sc})
       .then(function() { fetchLeaderboard(callback); })
       .catch(function() { callback([]); });
   }
@@ -713,47 +713,25 @@ function runGame() {
     var encodedText = encodeURIComponent(shareText);
     var encodedUrl = encodeURIComponent(APP_URL);
 
+    // Open share URL synchronously (must be in click handler to avoid popup block)
+    var shareUrl;
+    if (platform === 'x') {
+      shareUrl = 'https://twitter.com/intent/tweet?text=' + encodedText;
+    } else {
+      shareUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodedUrl;
+    }
+    window.open(shareUrl, '_blank');
+
+    // Download screenshot in parallel so user can attach it
     captureNeuronImage(function(blob) {
-      if (!blob) {
-        // Fallback if capture fails — share without image
-        if (platform === 'x') {
-          window.open('https://twitter.com/intent/tweet?text=' + encodedText, '_blank');
-        } else {
-          window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodedUrl, '_blank');
-        }
-        return;
-      }
-
-      var file = new File([blob], 'neuron-score.png', {type: 'image/png'});
-
-      // Try native share with image (mobile / supported browsers)
-      if (navigator.share && navigator.canShare && navigator.canShare({files: [file]})) {
-        navigator.share({
-          title: 'NEURON \u2014 ' + score + ' synapses',
-          text: shareText,
-          url: APP_URL,
-          files: [file]
-        }).catch(function() {});
-        return;
-      }
-
-      // Desktop: download the image, then open share URL
+      if (!blob) return;
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'neuron-score.png';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
-
-      // Small delay so download starts before popup
-      setTimeout(function() {
-        if (platform === 'x') {
-          window.open('https://twitter.com/intent/tweet?text=' + encodedText, '_blank');
-        } else {
-          window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodedUrl, '_blank');
-        }
-      }, 300);
+      setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
     });
   }
 
@@ -771,6 +749,14 @@ function runGame() {
     } catch(e) {
       var box = document.getElementById('errBox');
       if (box) { box.style.display='block'; box.textContent='START ERR: '+e.message+' | '+e.stack; }
+    }
+  });
+
+  // Enter key starts/restarts game
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && overlay.style.display !== 'none') {
+      e.preventDefault();
+      mainBtn.click();
     }
   });
 

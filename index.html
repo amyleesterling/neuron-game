@@ -23,7 +23,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .hudLabel { display:block; font-size:7px; letter-spacing:0.15em; opacity:0.4; text-transform:uppercase; }
 .hudVal { display:block; font-size:19px; font-weight:700; color:#4fc3f7; }
 #gameCanvas { position:fixed; top:0; left:0; display:block; }
-#overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; z-index:20; text-align:center; padding:32px; }
+#overlay { position:fixed; inset:0; background:rgba(0,0,0,0.55); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; z-index:20; text-align:center; padding:32px; }
 #overlay h1 { font-size:52px; font-weight:900; letter-spacing:0.15em; color:#4fc3f7; text-shadow:0 0 30px rgba(79,195,247,0.9); }
 .info { font-size:11px; line-height:2.3; opacity:0.5; text-transform:uppercase; letter-spacing:0.08em; }
 .bigScore { font-size:58px; font-weight:900; color:#ffe566; text-shadow:0 0 28px rgba(255,229,102,0.9); }
@@ -170,8 +170,8 @@ function runGame() {
       pts: [{x: sx, y: sy}],
       dx: dx, dy: dy,
       spd: spd,
-      alpha: 0.08 + Math.random() * 0.12,
-      fade: 0.0003 + Math.random() * 0.0004,
+      alpha: 0.25 + Math.random() * 0.35,
+      fade: 0.0004 + Math.random() * 0.0005,
       col: hue,
       turnTimer: 20 + Math.floor(Math.random() * 40),
       turnCount: 0,
@@ -214,8 +214,8 @@ function runGame() {
             pts: [{x: nx, y: ny}],
             dx: fdx, dy: fdy,
             spd: d.spd * (0.7 + Math.random() * 0.3),
-            alpha: d.alpha * 0.8,
-            fade: d.fade * 1.2,
+            alpha: d.alpha * 0.85,
+            fade: d.fade * 1.1,
             col: d.col,
             turnTimer: 20 + Math.floor(Math.random() * 30),
             turnCount: 0,
@@ -255,7 +255,7 @@ function runGame() {
       var tip = d.pts[d.pts.length - 1];
       ctx.beginPath();
       ctx.arc(tip.x, tip.y, d.lineW + 1, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(' + d.col + ',' + Math.min(d.alpha * 3, 0.5) + ')';
+      ctx.fillStyle = 'rgba(' + d.col + ',' + Math.min(d.alpha * 2.5, 0.8) + ')';
       ctx.fill();
       ctx.restore();
     }

@@ -598,7 +598,8 @@ function runGame() {
         b.path.push({x: nx, y: ny});
         return;
       }
-      // Crossing own path OR other branch — fatal
+      // Push collision cell so intersection is visually shown
+      b.path.push({x: nx, y: ny});
       triggerDeath();
       return;
     }
@@ -656,22 +657,19 @@ function runGame() {
 
     lives--;
     if (lives > 0) {
-      // Step branch back so it's not still touching the wall when isHurt expires
-      if (b && b.path.length > 2) {
-        var tail = b.path[b.path.length - 1];
-        if (!isOnExistingPath(tail.x, tail.y)) {
-          delete occupied[cellKey(tail.x, tail.y)];
-        }
-        b.path.pop();
-        // Reverse direction so it moves away from obstacle
-        b.dirX = -b.dirX;
-        b.dirY = -b.dirY;
-      }
+      // Kill current branch, spawn fresh one from soma after brief pause
+      b.growing = false;
       isHurt = true;
       hurtTimer = 0;
       hasPend = false;
-      setTimeout(function() { isHurt = false; }, 700);
       refreshHUD();
+      setTimeout(function() {
+        isHurt = false;
+        spawnBranch();
+        activeIdx = branches.length - 1;
+        branches[activeIdx].growing = true;
+        refreshHUD();
+      }, 700);
       return;
     }
     // Demo mode — restart silently

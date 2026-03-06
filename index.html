@@ -843,7 +843,7 @@ function runGame() {
     for (var bi = 0; bi < drawBranches.length; bi++) {
       var fb = drawBranches[bi];
       if (fb.path.length < 2) continue;
-      sx.save(); sx.lineWidth = isAct ? Math.max(CELL * 0.6, 4) : Math.max(CELL * 0.5, 3); sx.lineCap = 'round'; sx.lineJoin = 'round';
+      sx.save(); sx.lineWidth = isAct ? Math.max(CELL * 0.35, 3) : Math.max(CELL * 0.25, 2.5); sx.lineCap = 'round'; sx.lineJoin = 'round';
       var isAct = (bi === activeIdx);
       sx.strokeStyle = isAct ? 'rgba(79,195,247,0.95)' : 'rgba(30,120,200,0.6)';
       sx.shadowColor  = isAct ? 'rgba(79,195,247,0.7)'  : 'rgba(30,120,200,0.35)';
@@ -1000,7 +1000,9 @@ function runGame() {
       if (b.path.length < 2) continue;
       var isActive = (bi === activeIdx);
       ctx.save();
-      var bw = isActive ? Math.max(CELL * 0.6, 4) : Math.max(CELL * 0.5, 3);
+      var bw = isDemo
+        ? (isActive ? Math.max(CELL * 0.15, 1.5) : Math.max(CELL * 0.1, 1))
+        : (isActive ? Math.max(CELL * 0.35, 3) : Math.max(CELL * 0.25, 2.5));
       ctx.lineWidth = bw;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
@@ -1014,10 +1016,10 @@ function runGame() {
       if (isActive && b.growing) {
         head = b.path[b.path.length - 1];
         hx = worldX(head.x); hy = worldY(head.y);
-        var hr = Math.max(CELL * 0.35, 5);
+        var hr = Math.max(CELL * 0.22, 4);
         ctx.beginPath(); ctx.arc(hx, hy, hr, 0, Math.PI*2);
         ctx.fillStyle = '#4fc3f7'; ctx.shadowBlur = 18; ctx.fill();
-        var arrL = CELL * 0.5, arrW = CELL * 0.22;
+        var arrL = CELL * 0.4, arrW = CELL * 0.18;
         ctx.beginPath();
         ctx.moveTo(hx + b.dirX*arrL, hy + b.dirY*arrL);
         ctx.lineTo(hx + b.dirX*arrL - b.dirY*arrW, hy + b.dirY*arrL + b.dirX*arrW);

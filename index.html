@@ -44,6 +44,9 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .lbTable .lbScore { color:#ffe566; font-weight:700; }
 .lbTable .lbYou td { color:#ff6b9d; }
 .lbTitle { font-size:9px; opacity:0.4; letter-spacing:0.2em; text-transform:uppercase; margin-top:12px; }
+.lbTabs { display:flex; gap:4px; justify-content:center; margin-top:10px; }
+.lbTab { background:transparent; border:1px solid rgba(79,195,247,0.25); color:rgba(160,216,240,0.4); font-family:'Courier New',monospace; font-size:9px; letter-spacing:0.15em; padding:6px 14px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
+.lbTabActive { border-color:#4fc3f7; color:#4fc3f7; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -95,24 +98,28 @@ function runGame() {
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphdnRoa25rc2RjcmxoaWFhcHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2MzUyOTIsImV4cCI6MjA4ODIxMTI5Mn0.APdwuQ-uudyHISBr7Dj6HTylO7qavJ0HhB32E5X434g'
   );
   var playerName = localStorage.getItem('neuron_name') || '';
+  var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 900);
+  var platform = isMobile ? 'mobile' : 'desktop';
 
-  function fetchLeaderboard(callback) {
-    sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(10)
-      .then(function(res) { callback(res.data || []); })
+  function fetchLeaderboard(plat, callback) {
+    var query = sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(10);
+    if (plat) query = query.eq('platform', plat);
+    query.then(function(res) { callback(res.data || []); })
       .catch(function() { callback([]); });
   }
 
   function submitScore(name, sc, callback) {
     playerName = name;
     localStorage.setItem('neuron_name', name);
-    sb.from('neuron_snake_leaderboard').insert({name: name, score: sc})
-      .then(function() { fetchLeaderboard(callback); })
+    sb.from('neuron_snake_leaderboard').insert({name: name, score: sc, platform: platform})
+      .then(function() { fetchLeaderboard(platform, callback); })
       .catch(function() { callback([]); });
   }
 
-  function buildLeaderboardHTML(rows, myScore) {
-    if (!rows || rows.length === 0) return '<div class="lbTitle">Leaderboard</div><div class="info">No scores yet</div>';
-    var html = '<div class="lbTitle">Global Leaderboard</div><table class="lbTable"><tr><th>Rank</th><th>Name</th><th>Score</th></tr>';
+  function buildLeaderboardHTML(rows, myScore, label) {
+    var title = label || (platform === 'mobile' ? '\uD83D\uDCF1 Mobile' : '\uD83D\uDDA5\uFE0F Desktop');
+    if (!rows || rows.length === 0) return '<div class="lbTitle">' + title + ' Leaderboard</div><div class="info">No scores yet</div>';
+    var html = '<div class="lbTitle">' + title + ' Leaderboard</div><table class="lbTable"><tr><th>Rank</th><th>Name</th><th>Score</th></tr>';
     for (var i = 0; i < rows.length; i++) {
       var isYou = (rows[i].name === playerName && rows[i].score === myScore);
       html += '<tr' + (isYou ? ' class="lbYou"' : '') + '>';
@@ -746,6 +753,10 @@ function runGame() {
         '<input class="nameInput" id="nameIn" placeholder="YOUR NAME" maxlength="12"' + nameVal + '>' +
         '<button class="submitBtn" id="submitBtn">SUBMIT</button>' +
       '</div>' +
+      '<div class="lbTabs">' +
+        '<button class="lbTab' + (isMobile ? ' lbTabActive' : '') + '" id="tabMobile">\uD83D\uDCF1 MOBILE</button>' +
+        '<button class="lbTab' + (!isMobile ? ' lbTabActive' : '') + '" id="tabDesktop">\uD83D\uDDA5\uFE0F DESKTOP</button>' +
+      '</div>' +
       '<div id="lbArea"><div class="lbTitle">Loading leaderboard...</div></div>' +
       '<div class="shareRow">' +
         '<button class="shareBtn" id="btnX">SHARE ON X</button>' +
@@ -762,6 +773,20 @@ function runGame() {
     var submitBtnEl = document.getElementById('submitBtn');
     var lbArea = document.getElementById('lbArea');
 
+    var viewPlat = platform; // which leaderboard tab is active
+
+    function showLb(plat, sc) {
+      viewPlat = plat;
+      var tm = document.getElementById('tabMobile');
+      var td = document.getElementById('tabDesktop');
+      if (tm) { tm.className = 'lbTab' + (plat === 'mobile' ? ' lbTabActive' : ''); }
+      if (td) { td.className = 'lbTab' + (plat === 'desktop' ? ' lbTabActive' : ''); }
+      fetchLeaderboard(plat, function(rows) {
+        var label = plat === 'mobile' ? '\uD83D\uDCF1 Mobile' : '\uD83D\uDDA5\uFE0F Desktop';
+        lbArea.innerHTML = buildLeaderboardHTML(rows, sc, label);
+      });
+    }
+
     function doSubmit() {
       var n = nameIn.value.trim().toUpperCase();
       if (!n || submitted) return;
@@ -771,21 +796,26 @@ function runGame() {
         submitBtnEl.textContent = '\u2713';
         submitBtnEl.style.borderColor = '#4fc3f7';
         submitBtnEl.style.color = '#4fc3f7';
-        lbArea.innerHTML = buildLeaderboardHTML(rows, score);
+        var label = platform === 'mobile' ? '\uD83D\uDCF1 Mobile' : '\uD83D\uDDA5\uFE0F Desktop';
+        lbArea.innerHTML = buildLeaderboardHTML(rows, score, label);
       });
     }
 
     submitBtnEl.addEventListener('click', doSubmit);
     nameIn.addEventListener('keydown', function(e) { if (e.key === 'Enter') doSubmit(); });
 
+    // Tab switching
+    var tmBtn = document.getElementById('tabMobile');
+    var tdBtn = document.getElementById('tabDesktop');
+    if (tmBtn) tmBtn.addEventListener('click', function() { showLb('mobile', submitted ? score : -1); });
+    if (tdBtn) tdBtn.addEventListener('click', function() { showLb('desktop', submitted ? score : -1); });
+
     // If name already saved, auto-submit
     if (playerName) {
       doSubmit();
     } else {
-      // Just show existing leaderboard
-      fetchLeaderboard(function(rows) {
-        lbArea.innerHTML = buildLeaderboardHTML(rows, -1);
-      });
+      // Just show existing leaderboard for current platform
+      showLb(platform, -1);
     }
 
     var bx = document.getElementById('btnX');

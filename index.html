@@ -94,8 +94,8 @@ function runGame() {
     CH = window.innerHeight - HUD;
     canvas.width = CW;
     canvas.height = CH;
-    CELL = Math.floor(Math.min(CW, CH) / 22);
-    if (CELL < 10) CELL = 10;
+    CELL = Math.floor(Math.min(CW, CH) / 48);
+    if (CELL < 5) CELL = 5;
     COLS = Math.floor(CW / CELL);
     ROWS = Math.floor(CH / CELL);
   }
@@ -145,7 +145,7 @@ function runGame() {
     isHurt = false;
     hurtTimer = 0;
     pendDX = 0; pendDY = 0; hasPend = false;
-    gameSpd = 135; accum = 0;
+    gameSpd = 65; accum = 0;
     particles = []; frozenBranches = []; frozenDots = [];
     particlesActive = false;
 
@@ -154,10 +154,10 @@ function runGame() {
 
     // Block soma area (but NOT the center itself — branches start there)
     var dy, dx;
-    for (dy = -2; dy <= 2; dy++) {
-      for (dx = -2; dx <= 2; dx++) {
+    for (dy = -4; dy <= 4; dy++) {
+      for (dx = -4; dx <= 4; dx++) {
         if (dx === 0 && dy === 0) continue; // center stays open for branch origins
-        if (dx*dx + dy*dy <= 5) {
+        if (dx*dx + dy*dy <= 20) {
           occupied[cellKey(somaGX+dx, somaGY+dy)] = true;
         }
       }
@@ -165,16 +165,16 @@ function runGame() {
 
     // Define 3 branch origins matching pyramidal shape
     origins = [
-      {x: somaGX,   y: somaGY-2, dx: 0,  dy: -1, name: 'top'},
-      {x: somaGX-2, y: somaGY+1, dx: -1, dy: 0,  name: 'left'},
-      {x: somaGX+2, y: somaGY+1, dx: 1,  dy: 0,  name: 'right'}
+      {x: somaGX,   y: somaGY-4, dx: 0,  dy: -1, name: 'top'},
+      {x: somaGX-4, y: somaGY+2, dx: -1, dy: 0,  name: 'left'},
+      {x: somaGX+4, y: somaGY+2, dx: 1,  dy: 0,  name: 'right'}
     ];
 
     // Axon exits from base of pyramid
     var i;
-    for (i = 1; i <= 6; i++) {
-      axonPts.push({x: somaGX, y: somaGY + 2 + i});
-      occupied[cellKey(somaGX, somaGY + 2 + i)] = true;
+    for (i = 1; i <= 12; i++) {
+      axonPts.push({x: somaGX, y: somaGY + 4 + i});
+      occupied[cellKey(somaGX, somaGY + 4 + i)] = true;
     }
 
     spawnBranch();
@@ -208,7 +208,7 @@ function runGame() {
       x = 2 + Math.floor(Math.random() * (COLS - 4));
       y = 2 + Math.floor(Math.random() * (ROWS - 4));
       if (occupied[cellKey(x, y)]) continue;
-      if (Math.abs(x - somaGX) < 5 && Math.abs(y - somaGY) < 5) continue;
+      if (Math.abs(x - somaGX) < 10 && Math.abs(y - somaGY) < 10) continue;
       dup = false;
       for (i = 0; i < dots.length; i++) {
         if (dots[i].x === x && dots[i].y === y) { dup = true; break; }
@@ -307,7 +307,7 @@ function runGame() {
     if (x === somaGX && y === somaGY) return true;
     // Soma body cells
     var ddx = x - somaGX, ddy = y - somaGY;
-    if (ddx * ddx + ddy * ddy <= 5) return true;
+    if (ddx * ddx + ddy * ddy <= 20) return true;
     // Axon cells
     for (var ai = 0; ai < axonPts.length; ai++) {
       if (axonPts[ai].x === x && axonPts[ai].y === y) return true;
@@ -344,7 +344,7 @@ function runGame() {
         dots.splice(i, 1);
         b.growing = false;
         score++;
-        gameSpd = Math.max(55, gameSpd - 4);
+        gameSpd = Math.max(30, gameSpd - 2);
         launchSignal(b);
         spawnDot();
         if (Math.random() < 0.25) spawnDot();
@@ -356,17 +356,12 @@ function runGame() {
     }
 
     if (occupied[kk]) {
-      // Own path cells are always safe to retrace (no re-mark needed)
-      if (isOwnPath(nx, ny)) {
-        b.path.push({x: nx, y: ny});
-        return;
-      }
-      // Other branch / soma body — allowed only while still on existing path from origin
+      // Soma/axon/other branch — allowed only while still near origin
       if (b.onExistingPath && isOnExistingPath(nx, ny)) {
         b.path.push({x: nx, y: ny});
         return;
       }
-      // True intersection — fatal
+      // Crossing own path OR other branch — fatal
       triggerDeath();
       return;
     }
@@ -582,7 +577,7 @@ function runGame() {
     }
 
     // Soma
-    var smx = worldX(somaGX), smy = worldY(somaGY), r = CELL * 1.3;
+    var smx = worldX(somaGX), smy = worldY(somaGY), r = CELL * 2.8;
     var sg = sx.createRadialGradient(smx,smy,0,smx,smy,r*1.8);
     sg.addColorStop(0,'rgba(79,195,247,0.18)'); sg.addColorStop(1,'rgba(79,195,247,0)');
     sx.beginPath(); sx.arc(smx,smy,r*1.8,0,Math.PI*2); sx.fillStyle=sg; sx.fill();
@@ -761,7 +756,7 @@ function runGame() {
     }
 
     // Soma
-    var smx = worldX(somaGX), smy = worldY(somaGY), r = CELL * 1.3;
+    var smx = worldX(somaGX), smy = worldY(somaGY), r = CELL * 2.8;
     var sg = ctx.createRadialGradient(smx, smy, 0, smx, smy, r*1.8);
     sg.addColorStop(0, 'rgba(79,195,247,0.18)'); sg.addColorStop(1, 'rgba(79,195,247,0)');
     ctx.beginPath(); ctx.arc(smx, smy, r*1.8, 0, Math.PI*2); ctx.fillStyle = sg; ctx.fill();

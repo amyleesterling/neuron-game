@@ -300,6 +300,29 @@ function runGame() {
     return false;
   }
 
+  // Returns true if (x,y) is on soma body, axon, or another branch's path
+  // (i.e. it was occupied before the current branch grew through it)
+  function isOnExistingPath(x, y) {
+    // Soma center
+    if (x === somaGX && y === somaGY) return true;
+    // Soma body cells
+    var ddx = x - somaGX, ddy = y - somaGY;
+    if (ddx * ddx + ddy * ddy <= 5) return true;
+    // Axon cells
+    for (var ai = 0; ai < axonPts.length; ai++) {
+      if (axonPts[ai].x === x && axonPts[ai].y === y) return true;
+    }
+    // Other branches
+    for (var bi = 0; bi < branches.length; bi++) {
+      if (bi === activeIdx) continue;
+      var bp = branches[bi].path;
+      for (var i = 0; i < bp.length; i++) {
+        if (bp[i].x === x && bp[i].y === y) return true;
+      }
+    }
+    return false;
+  }
+
   function step() {
     if (isDead || isHurt) return;
     var b = branches[activeIdx];

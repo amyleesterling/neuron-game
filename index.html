@@ -8,7 +8,8 @@
 <meta name="description" content="Grow dendrites. Reach synaptic targets. Don't cross your branches.">
 <meta property="og:title" content="NEURON — a dendrite growth game">
 <meta property="og:description" content="Grow dendrites. Reach synaptic targets. Don't cross your branches.">
-<meta property="og:url" content="https://amyleesterling.github.io/neuron-game">
+<meta property="og:url" content="https://neuronsnake.com">
+<link rel="canonical" href="https://neuronsnake.com">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="NEURON — a dendrite growth game">
@@ -47,7 +48,16 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .lbTabs { display:flex; gap:4px; justify-content:center; margin-top:10px; }
 .lbTab { background:transparent; border:1px solid rgba(79,195,247,0.25); color:rgba(160,216,240,0.4); font-family:'Courier New',monospace; font-size:9px; letter-spacing:0.15em; padding:6px 14px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
 .lbTabActive { border-color:#4fc3f7; color:#4fc3f7; }
+#adOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:50; display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; padding:24px; }
+#adOverlay.adShow { display:flex; }
+#adOverlay .adTitle { font-size:14px; letter-spacing:0.2em; text-transform:uppercase; color:#4fc3f7; }
+#adOverlay .adTimer { font-size:32px; font-weight:900; color:#ffe566; text-shadow:0 0 20px rgba(255,229,102,0.7); }
+#adOverlay .adSkip { font-size:9px; opacity:0.3; letter-spacing:0.15em; text-transform:uppercase; margin-top:8px; }
+#adOverlay .adUnit { width:320px; max-width:90vw; min-height:100px; background:rgba(79,195,247,0.04); border:1px solid rgba(79,195,247,0.1); display:flex; align-items:center; justify-content:center; margin:8px auto; }
+.adLifeBtn { background:transparent; border:1px solid #ffe566; color:#ffe566; font-family:'Courier New',monospace; font-size:11px; letter-spacing:0.15em; padding:12px 24px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; animation:adPulse 1.5s ease-in-out infinite; }
+@keyframes adPulse { 0%,100% { box-shadow:0 0 8px rgba(255,229,102,0.3); } 50% { box-shadow:0 0 20px rgba(255,229,102,0.6); } }
 </style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897605867387651" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
@@ -63,6 +73,15 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 
 <canvas id="gameCanvas"></canvas>
 <div id="errBox"></div>
+
+<div id="adOverlay">
+  <div class="adTitle">⚡ EXTRA LIFE ⚡</div>
+  <div class="adUnit">
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-0897605867387651" data-ad-slot="XXXXXXXXXX" data-ad-format="rectangle" data-full-width-responsive="false"></ins>
+  </div>
+  <div class="adTimer" id="adCountdown">5</div>
+  <div class="adSkip">Granting extra life...</div>
+</div>
 
 <div id="overlay">
   <h1 id="olTitle">NEURON</h1>
@@ -315,6 +334,7 @@ function runGame() {
   var particlesActive = false;
   var isDemo = true;
   var demoAccum = 0;
+  var adLifeUsed = false;
 
   function cellKey(x, y) { return x + '_' + y; }
   function worldX(gx) { return gx * CELL + CELL / 2; }
@@ -336,6 +356,7 @@ function runGame() {
     gameSpd = 65; accum = 0;
     particles = []; frozenBranches = []; frozenDots = [];
     particlesActive = false;
+    adLifeUsed = false;
 
     somaGX = Math.floor(COLS / 2);
     somaGY = Math.floor(ROWS / 2);
@@ -682,7 +703,21 @@ function runGame() {
     }
     // Demo mode — restart silently
     if (isDemo) { demoInit(); return; }
+    // Offer ad life if score >= 6 and not yet used
+    if (score >= 6 && !adLifeUsed) {
+      b.growing = false;
+      isHurt = true;
+      hurtTimer = 0;
+      hasPend = false;
+      refreshHUD();
+      showAdLifeOffer();
+      return;
+    }
     // All lives gone — full apoptosis immediately
+    doFullDeath();
+  }
+
+  function doFullDeath() {
     isDead = true;
     gState = 'dead';
     frozenBranches = branches.slice();
@@ -690,6 +725,62 @@ function runGame() {
     buildParticles();
     particlesActive = true;
     setTimeout(showResults, 2200);
+  }
+
+  function showAdLifeOffer() {
+    // Pause game and show offer button on the overlay
+    olTitle.textContent = 'NEURON';
+    olTitle.style.color = '#4fc3f7';
+    olTitle.style.textShadow = '0 0 30px rgba(79,195,247,0.9)';
+    olBody.innerHTML =
+      '<div style="font-size:42px;margin-bottom:4px;">💀</div>' +
+      '<div style="font-size:11px;opacity:0.5;letter-spacing:0.15em;text-transform:uppercase;">Out of lives</div>' +
+      '<div style="margin-top:16px;">' +
+        '<button class="adLifeBtn" id="watchAdBtn">▶ WATCH AD FOR +1 LIFE</button>' +
+      '</div>' +
+      '<div style="font-size:8px;opacity:0.25;margin-top:12px;letter-spacing:0.1em;text-transform:uppercase;">One-time per game</div>';
+    mainBtn.textContent = 'NO THANKS';
+    mainBtn.style.borderColor = 'rgba(79,195,247,0.3)';
+    mainBtn.style.color = 'rgba(79,195,247,0.4)';
+    overlay.style.display = 'flex';
+
+    var watchBtn = document.getElementById('watchAdBtn');
+    watchBtn.addEventListener('click', function() {
+      overlay.style.display = 'none';
+      startAdCountdown();
+    });
+  }
+
+  function startAdCountdown() {
+    adLifeUsed = true;
+    var adOl = document.getElementById('adOverlay');
+    var adCD = document.getElementById('adCountdown');
+    adOl.className = 'adShow';
+    var remaining = 5;
+    adCD.textContent = remaining;
+
+    // Try to push ad
+    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}
+
+    var adInt = setInterval(function() {
+      remaining--;
+      adCD.textContent = remaining;
+      if (remaining <= 0) {
+        clearInterval(adInt);
+        adOl.className = '';
+        grantAdLife();
+      }
+    }, 1000);
+  }
+
+  function grantAdLife() {
+    lives = 1;
+    isHurt = false;
+    refreshHUD();
+    spawnBranch();
+    activeIdx = branches.length - 1;
+    branches[activeIdx].growing = true;
+    refreshHUD();
   }
 
   function buildParticles() {

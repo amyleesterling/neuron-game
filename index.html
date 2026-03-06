@@ -367,13 +367,12 @@ function runGame() {
 
   function spawnBranch() {
     var pick = origins[Math.floor(Math.random() * origins.length)];
-    var p0 = {x: somaGX, y: somaGY};
-    var p1 = {x: pick.x, y: pick.y};
-    var p2 = {x: pick.x + pick.dx, y: pick.y + pick.dy};
+    var p0 = {x: pick.x, y: pick.y};  // start at origin point
+    var p1 = {x: pick.x + pick.dx, y: pick.y + pick.dy};  // one step outward
+    if (!occupied[cellKey(p0.x, p0.y)]) occupied[cellKey(p0.x, p0.y)] = true;
     if (!occupied[cellKey(p1.x, p1.y)]) occupied[cellKey(p1.x, p1.y)] = true;
-    if (!occupied[cellKey(p2.x, p2.y)]) occupied[cellKey(p2.x, p2.y)] = true;
     branches.push({
-      path: [p0, p1, p2],
+      path: [p0, p1],
       dirX: pick.dx,
       dirY: pick.dy,
       origName: pick.name,
@@ -626,6 +625,8 @@ function runGame() {
     var path = [];
     var i;
     for (i = b.path.length - 1; i >= 0; i--) path.push(b.path[i]);
+    // Bridge from branch origin through soma center to axon
+    path.push({x: somaGX, y: somaGY});
     for (i = 0; i < axonPts.length; i++) path.push(axonPts[i]);
     signals.push({path: path, t: 0, spd: 0.035, onDone: null});
   }

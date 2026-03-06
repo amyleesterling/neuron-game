@@ -1,0 +1,845 @@
+<!-- NEURON v3 -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NEURON</title>
+<meta name="description" content="Grow dendrites. Reach synaptic targets. Don't cross your branches.">
+<meta property="og:title" content="NEURON — a dendrite growth game">
+<meta property="og:description" content="Grow dendrites. Reach synaptic targets. Don't cross your branches.">
+<meta property="og:url" content="https://amyleesterling.github.io/neuron-game">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="NEURON — a dendrite growth game">
+<meta name="twitter:description" content="Grow dendrites. Reach synaptic targets. Don't cross your branches.">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; background:#000; overflow:hidden; font-family:'Courier New',monospace; color:#a0d8f0; touch-action:none; -webkit-user-select:none; user-select:none; }
+#hud { position:fixed; top:0; left:0; right:0; height:46px; display:flex; justify-content:space-between; align-items:center; padding:0 16px; background:rgba(0,0,0,0.97); z-index:10; }
+#hudTitle { font-size:17px; font-weight:900; letter-spacing:0.2em; color:#4fc3f7; }
+#hudRight { display:flex; gap:18px; }
+.hudStat { text-align:right; }
+.hudLabel { display:block; font-size:7px; letter-spacing:0.15em; opacity:0.4; text-transform:uppercase; }
+.hudVal { display:block; font-size:19px; font-weight:700; color:#4fc3f7; }
+#gameCanvas { position:fixed; top:46px; left:0; display:block; }
+#overlay { position:fixed; inset:0; background:rgba(0,0,0,0.93); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; z-index:20; text-align:center; padding:32px; }
+#overlay h1 { font-size:52px; font-weight:900; letter-spacing:0.15em; color:#4fc3f7; text-shadow:0 0 30px rgba(79,195,247,0.9); }
+.info { font-size:11px; line-height:2.3; opacity:0.5; text-transform:uppercase; letter-spacing:0.08em; }
+.bigScore { font-size:58px; font-weight:900; color:#ffe566; text-shadow:0 0 28px rgba(255,229,102,0.9); }
+.scoreLbl { font-size:9px; opacity:0.4; letter-spacing:0.2em; text-transform:uppercase; margin-top:-12px; }
+.shareRow { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+#mainBtn { background:transparent; border:1px solid #4fc3f7; color:#4fc3f7; font-family:'Courier New',monospace; font-size:12px; letter-spacing:0.2em; padding:13px 36px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
+.shareBtn { background:transparent; border:1px solid #ff6b9d; color:#ff6b9d; font-family:'Courier New',monospace; font-size:11px; letter-spacing:0.2em; padding:12px 24px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
+#errBox { position:fixed; bottom:0; left:0; right:0; background:#ff0033; color:#fff; font-size:11px; padding:8px 12px; z-index:999; display:none; word-break:break-all; }
+</style>
+</head>
+<body>
+
+<div id="hud">
+  <div id="hudTitle">NEURON</div>
+  <div id="hudRight">
+    <div class="hudStat"><span class="hudLabel">Synapses</span><span class="hudVal" id="valScore">0</span></div>
+    <div class="hudStat"><span class="hudLabel">Branches</span><span class="hudVal" id="valBranch">0</span></div>
+    <div class="hudStat"><span class="hudLabel">Lives</span><span class="hudVal" id="valLives">❤️❤️</span></div>
+  </div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+<div id="errBox"></div>
+
+<div id="overlay">
+  <h1 id="olTitle">NEURON</h1>
+  <div id="olBody">
+    <div class="info">Grow dendrites · reach synaptic targets<br>Don't cross existing branches<br><br>TAP where you want to turn</div>
+  </div>
+  <button id="mainBtn">FIRE SIGNAL</button>
+</div>
+
+<script>
+// Global error catcher — shows errors visibly on screen
+window.onerror = function(msg, src, line, col, err) {
+  var box = document.getElementById('errBox');
+  if (box) {
+    box.style.display = 'block';
+    box.textContent = 'ERR: ' + msg + ' (line ' + line + ')';
+  }
+  return false;
+};
+
+window.addEventListener('load', function() {
+  try { runGame(); } catch(e) {
+    var box = document.getElementById('errBox');
+    if (box) { box.style.display='block'; box.textContent='LOAD ERR: '+e.message+' stack:'+e.stack; }
+  }
+});
+
+function runGame() {
+
+  var canvas = document.getElementById('gameCanvas');
+  var ctx = canvas.getContext('2d');
+  var overlay = document.getElementById('overlay');
+  var olTitle = document.getElementById('olTitle');
+  var olBody = document.getElementById('olBody');
+  var mainBtn = document.getElementById('mainBtn');
+  var valScore = document.getElementById('valScore');
+  var valBranch = document.getElementById('valBranch');
+  var valLives = document.getElementById('valLives');
+
+  var HUD = 46;
+  var CW, CH, CELL, COLS, ROWS;
+
+  function resize() {
+    CW = window.innerWidth;
+    CH = window.innerHeight - HUD;
+    canvas.width = CW;
+    canvas.height = CH;
+    CELL = Math.floor(Math.min(CW, CH) / 22);
+    if (CELL < 10) CELL = 10;
+    COLS = Math.floor(CW / CELL);
+    ROWS = Math.floor(CH / CELL);
+  }
+  resize();
+
+  // Game variables — all plain, no shorthand methods
+  var gState = 'menu';
+  var score = 0;
+  var branches = [];
+  var activeIdx = 0;
+  var dots = [];
+  var axonPts = [];
+  var signals = [];
+  var occupied = {};
+  var somaGX = 0;
+  var somaGY = 0;
+  var origins = [];  // [{x,y,dx,dy,name}]
+  var pendDX = 0;
+  var pendDY = 0;
+  var hasPend = false;
+  var gameSpd = 135;
+  var accum = 0;
+  var isDead = false;
+  var lives = 2;
+  var isHurt = false;
+  var hurtTimer = 0;
+  var lastTS = 0;
+  var particles = [];
+  var frozenBranches = [];
+  var frozenDots = [];
+  var particlesActive = false;
+
+  function cellKey(x, y) { return x + '_' + y; }
+  function worldX(gx) { return gx * CELL + CELL / 2; }
+  function worldY(gy) { return gy * CELL + CELL / 2; }
+
+  function initGame() {
+    score = 0;
+    branches = [];
+    activeIdx = 0;
+    dots = [];
+    axonPts = [];
+    signals = [];
+    occupied = {};
+    isDead = false;
+    lives = 2;
+    isHurt = false;
+    hurtTimer = 0;
+    pendDX = 0; pendDY = 0; hasPend = false;
+    gameSpd = 135; accum = 0;
+    particles = []; frozenBranches = []; frozenDots = [];
+    particlesActive = false;
+
+    somaGX = Math.floor(COLS / 2);
+    somaGY = Math.floor(ROWS / 2);
+
+    // Block soma area (but NOT the center itself — branches start there)
+    var dy, dx;
+    for (dy = -2; dy <= 2; dy++) {
+      for (dx = -2; dx <= 2; dx++) {
+        if (dx === 0 && dy === 0) continue; // center stays open for branch origins
+        if (dx*dx + dy*dy <= 5) {
+          occupied[cellKey(somaGX+dx, somaGY+dy)] = true;
+        }
+      }
+    }
+
+    // Define 3 branch origins matching pyramidal shape
+    origins = [
+      {x: somaGX,   y: somaGY-2, dx: 0,  dy: -1, name: 'top'},
+      {x: somaGX-2, y: somaGY+1, dx: -1, dy: 0,  name: 'left'},
+      {x: somaGX+2, y: somaGY+1, dx: 1,  dy: 0,  name: 'right'}
+    ];
+
+    // Axon exits from base of pyramid
+    var i;
+    for (i = 1; i <= 6; i++) {
+      axonPts.push({x: somaGX, y: somaGY + 2 + i});
+      occupied[cellKey(somaGX, somaGY + 2 + i)] = true;
+    }
+
+    spawnBranch();
+    branches[0].growing = true;
+
+    for (i = 0; i < 5; i++) { spawnDot(); }
+    refreshHUD();
+  }
+
+  function spawnBranch() {
+    var pick = origins[Math.floor(Math.random() * origins.length)];
+    var p0 = {x: somaGX, y: somaGY};
+    var p1 = {x: pick.x, y: pick.y};
+    var p2 = {x: pick.x + pick.dx, y: pick.y + pick.dy};
+    if (!occupied[cellKey(p1.x, p1.y)]) occupied[cellKey(p1.x, p1.y)] = true;
+    if (!occupied[cellKey(p2.x, p2.y)]) occupied[cellKey(p2.x, p2.y)] = true;
+    branches.push({
+      path: [p0, p1, p2],
+      dirX: pick.dx,
+      dirY: pick.dy,
+      origName: pick.name,
+      growing: false,
+      onExistingPath: true  // starts true — branch begins on soma/existing path
+    });
+    return true;
+  }
+
+  function spawnDot() {
+    var attempts, x, y, dup, i;
+    for (attempts = 0; attempts < 400; attempts++) {
+      x = 2 + Math.floor(Math.random() * (COLS - 4));
+      y = 2 + Math.floor(Math.random() * (ROWS - 4));
+      if (occupied[cellKey(x, y)]) continue;
+      if (Math.abs(x - somaGX) < 5 && Math.abs(y - somaGY) < 5) continue;
+      dup = false;
+      for (i = 0; i < dots.length; i++) {
+        if (dots[i].x === x && dots[i].y === y) { dup = true; break; }
+      }
+      if (!dup) {
+        dots.push({x: x, y: y, phase: Math.random() * Math.PI * 2});
+        return;
+      }
+    }
+  }
+
+  // Input
+  function handleTap(clientX, clientY) {
+    if (gState !== 'playing' || isDead) return;
+    var b = branches[activeIdx];
+    if (!b || !b.growing) return;
+    var head = b.path[b.path.length - 1];
+    var hx = worldX(head.x);
+    var hy = worldY(head.y);
+    var relY = clientY - HUD;
+    var ddx = clientX - hx;
+    var ddy = relY - hy;
+    var ndx, ndy;
+    if (Math.abs(ddx) >= Math.abs(ddy)) {
+      ndx = ddx > 0 ? 1 : -1;
+      ndy = 0;
+      if (ndx === -b.dirX && b.dirX !== 0) { ndx = 0; ndy = ddy >= 0 ? 1 : -1; }
+    } else {
+      ndx = 0;
+      ndy = ddy > 0 ? 1 : -1;
+      if (ndy === -b.dirY && b.dirY !== 0) { ndx = ddx >= 0 ? 1 : -1; ndy = 0; }
+    }
+    pendDX = ndx; pendDY = ndy; hasPend = true;
+  }
+
+  canvas.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    handleTap(e.touches[0].clientX, e.touches[0].clientY);
+  }, {passive: false});
+
+  canvas.addEventListener('mousedown', function(e) {
+    handleTap(e.clientX, e.clientY);
+  });
+
+  document.addEventListener('keydown', function(e) {
+    var ndx = 0, ndy = 0, matched = true;
+    if (e.key === 'ArrowUp'    || e.key === 'w') { ndx=0; ndy=-1; }
+    else if (e.key === 'ArrowDown'  || e.key === 's') { ndx=0; ndy=1; }
+    else if (e.key === 'ArrowLeft'  || e.key === 'a') { ndx=-1; ndy=0; }
+    else if (e.key === 'ArrowRight' || e.key === 'd') { ndx=1; ndy=0; }
+    else matched = false;
+    if (!matched) return;
+    e.preventDefault();
+    var b = branches[activeIdx];
+    if (!b || !b.growing) return;
+    if (ndx !== 0 && b.dirX !== 0) return;
+    if (ndy !== 0 && b.dirY !== 0) return;
+    pendDX = ndx; pendDY = ndy; hasPend = true;
+  });
+
+  // Returns true if (x,y) is on any branch OTHER than activeIdx, or is soma-blocked area
+  function isOtherBranchCell(x, y) {
+    var kk = cellKey(x, y);
+    // Soma body cells (not center — center is safe start point)
+    if (x === somaGX && y === somaGY) return false; // soma center always safe
+    // Axon cells
+    for (var ai = 0; ai < axonPts.length; ai++) {
+      if (axonPts[ai].x === x && axonPts[ai].y === y) return true;
+    }
+    // Other branches
+    for (var bi = 0; bi < branches.length; bi++) {
+      if (bi === activeIdx) continue;
+      var bp = branches[bi].path;
+      for (var i = 0; i < bp.length; i++) {
+        if (cellKey(bp[i].x, bp[i].y) === kk) return true;
+      }
+    }
+    return false;
+  }
+
+  // Returns true if (x,y) is on the CURRENT branch's own path
+  function isOwnPath(x, y) {
+    var kk = cellKey(x, y);
+    var b = branches[activeIdx];
+    if (!b) return false;
+    for (var i = 0; i < b.path.length; i++) {
+      if (cellKey(b.path[i].x, b.path[i].y) === kk) return true;
+    }
+    return false;
+  }
+
+  function step() {
+    if (isDead || isHurt) return;
+    var b = branches[activeIdx];
+    if (!b || !b.growing) return;
+    if (hasPend) { b.dirX = pendDX; b.dirY = pendDY; hasPend = false; }
+    var head = b.path[b.path.length - 1];
+    var nx = head.x + b.dirX;
+    var ny = head.y + b.dirY;
+    if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) { triggerDeath(); return; }
+    var kk = cellKey(nx, ny);
+    var i;
+
+    // Check dot hit first
+    for (i = 0; i < dots.length; i++) {
+      if (dots[i].x === nx && dots[i].y === ny) {
+        b.path.push({x: nx, y: ny});
+        occupied[kk] = true;
+        b.onExistingPath = false;
+        dots.splice(i, 1);
+        b.growing = false;
+        score++;
+        gameSpd = Math.max(55, gameSpd - 4);
+        launchSignal(b);
+        spawnDot();
+        if (Math.random() < 0.25) spawnDot();
+        flashScore();
+        signals[signals.length - 1].onDone = nextBranch;
+        refreshHUD();
+        return;
+      }
+    }
+
+    if (occupied[kk]) {
+      // Own path cells are always safe to retrace (no re-mark needed)
+      if (isOwnPath(nx, ny)) {
+        b.path.push({x: nx, y: ny});
+        return;
+      }
+      // Other branch / soma body — allowed only while still on existing path from origin
+      if (b.onExistingPath && isOnExistingPath(nx, ny)) {
+        b.path.push({x: nx, y: ny});
+        return;
+      }
+      // True intersection — fatal
+      triggerDeath();
+      return;
+    }
+
+    // Fresh unoccupied cell — committed, no more free retracing
+    b.onExistingPath = false;
+    b.path.push({x: nx, y: ny});
+    occupied[kk] = true;
+  }
+
+  function nextBranch() {
+    try {
+      spawnBranch();
+      activeIdx = branches.length - 1;
+      branches[activeIdx].growing = true;
+      refreshHUD();
+    } catch(e) {
+      var box = document.getElementById('errBox');
+      if (box) { box.style.display='block'; box.textContent='nextBranch ERR: '+e.message; }
+    }
+  }
+
+  function launchSignal(b) {
+    var path = [];
+    var i;
+    for (i = b.path.length - 1; i >= 0; i--) path.push(b.path[i]);
+    for (i = 0; i < axonPts.length; i++) path.push(axonPts[i]);
+    signals.push({path: path, t: 0, spd: 0.035, onDone: null});
+  }
+
+  function spawnHitBurst(x, y) {
+    // Small instant particle burst at collision point
+    var i, ang, spd;
+    for (i = 0; i < 30; i++) {
+      ang = Math.random() * Math.PI * 2;
+      spd = 1 + Math.random() * 4;
+      particles.push({
+        x: x, y: y,
+        vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
+        r: 2 + Math.random() * 3, a: 1,
+        col: '255,80,80',
+        dec: 0.025 + Math.random() * 0.02,
+        grav: 0.05 + Math.random() * 0.04
+      });
+    }
+    particlesActive = true;
+  }
+
+  function triggerDeath() {
+    if (isDead || isHurt) return;
+    // Instant burst at branch head
+    var b = branches[activeIdx];
+    var head = b ? b.path[b.path.length - 1] : null;
+    if (head) spawnHitBurst(worldX(head.x), worldY(head.y));
+
+    lives--;
+    if (lives > 0) {
+      // Step branch back so it's not still touching the wall when isHurt expires
+      if (b && b.path.length > 2) {
+        var tail = b.path[b.path.length - 1];
+        if (!isOnExistingPath(tail.x, tail.y)) {
+          delete occupied[cellKey(tail.x, tail.y)];
+        }
+        b.path.pop();
+        // Reverse direction so it moves away from obstacle
+        b.dirX = -b.dirX;
+        b.dirY = -b.dirY;
+      }
+      isHurt = true;
+      hurtTimer = 0;
+      hasPend = false;
+      setTimeout(function() { isHurt = false; }, 700);
+      refreshHUD();
+      return;
+    }
+    // All lives gone — full apoptosis immediately
+    isDead = true;
+    gState = 'dead';
+    frozenBranches = branches.slice();
+    frozenDots = dots.slice();
+    buildParticles();
+    particlesActive = true;
+    setTimeout(showResults, 2200);
+  }
+
+  function buildParticles() {
+    particles = [];
+    var bi, pi, ci, ang, spd2, bp;
+    for (bi = 0; bi < branches.length; bi++) {
+      bp = branches[bi].path;
+      for (pi = 0; pi < bp.length; pi++) {
+        for (ci = 0; ci < 2; ci++) {
+          ang = Math.random() * Math.PI * 2;
+          spd2 = 0.4 + Math.random() * 2.8;
+          particles.push({
+            x: worldX(bp[pi].x), y: worldY(bp[pi].y),
+            vx: Math.cos(ang) * spd2, vy: Math.sin(ang) * spd2,
+            r: 1.5 + Math.random() * 2.5, a: 1,
+            col: bi === activeIdx ? '79,195,247' : '30,120,200',
+            dec: 0.012 + Math.random() * 0.016,
+            grav: 0.04 + Math.random() * 0.05
+          });
+        }
+      }
+    }
+    var si, ang2, spd3;
+    for (si = 0; si < 80; si++) {
+      ang2 = Math.random() * Math.PI * 2;
+      spd3 = 1 + Math.random() * 4;
+      particles.push({
+        x: worldX(somaGX), y: worldY(somaGY),
+        vx: Math.cos(ang2) * spd3, vy: Math.sin(ang2) * spd3,
+        r: 2 + Math.random() * 4, a: 1,
+        col: Math.random() < 0.5 ? '79,195,247' : '255,107,157',
+        dec: 0.007 + Math.random() * 0.013,
+        grav: 0.03 + Math.random() * 0.05
+      });
+    }
+  }
+
+  function tickParticles() {
+    var i, p;
+    for (i = 0; i < particles.length; i++) {
+      p = particles[i];
+      if (p.a <= 0) continue;
+      p.x += p.vx; p.y += p.vy;
+      p.vy += p.grav;
+      p.vx *= 0.98; p.vy *= 0.98;
+      p.a -= p.dec;
+    }
+  }
+
+  function showResults() {
+    particlesActive = false;
+    olTitle.textContent = 'APOPTOSIS';
+    olTitle.style.color = '#ff4466';
+    olTitle.style.textShadow = '0 0 30px rgba(255,68,102,0.8)';
+    olBody.innerHTML =
+      '<div class="bigScore">' + score + '</div>' +
+      '<div class="scoreLbl">synapses formed</div>' +
+      '<div class="shareRow">' +
+        '<button class="shareBtn" id="btnX">SHARE ON X</button>' +
+        '<button class="shareBtn" id="btnFB">FACEBOOK</button>' +
+      '</div>';
+    mainBtn.textContent = 'REGENERATE';
+    mainBtn.style.borderColor = '#4fc3f7';
+    mainBtn.style.color = '#4fc3f7';
+    overlay.style.display = 'flex';
+
+    var bx = document.getElementById('btnX');
+    var bf = document.getElementById('btnFB');
+    if (bx) bx.addEventListener('click', function() { doShare('x'); });
+    if (bf) bf.addEventListener('click', function() { doShare('fb'); });
+  }
+
+  function captureNeuronImage(callback) {
+    var sc = document.createElement('canvas');
+    sc.width = CW; sc.height = CH + HUD;
+    var sx = sc.getContext('2d');
+
+    // Use live state if frozen not yet set
+    var drawBranches = (frozenBranches && frozenBranches.length) ? frozenBranches : branches;
+    var drawDots = (frozenDots && frozenDots.length) ? frozenDots : dots;
+
+    // Background
+    sx.fillStyle = '#000';
+    sx.fillRect(0, 0, sc.width, sc.height);
+
+    // HUD bar
+    sx.fillStyle = 'rgba(0,0,0,0.97)';
+    sx.fillRect(0, 0, CW, HUD);
+    sx.fillStyle = '#4fc3f7';
+    sx.font = '900 15px Courier New';
+    sx.textBaseline = 'middle';
+    sx.fillText('NEURON', 14, HUD / 2);
+    sx.textAlign = 'right';
+    sx.font = '700 14px Courier New';
+    sx.fillText(score + ' SYNAPSES', CW - 14, HUD / 2);
+    sx.textAlign = 'left';
+
+    sx.save();
+    sx.translate(0, HUD);
+
+    // Grid
+    sx.strokeStyle = 'rgba(79,195,247,0.05)'; sx.lineWidth = 0.5;
+    var x, y;
+    for (x = 0; x <= COLS; x++) { sx.beginPath(); sx.moveTo(x*CELL,0); sx.lineTo(x*CELL,CH); sx.stroke(); }
+    for (y = 0; y <= ROWS; y++) { sx.beginPath(); sx.moveTo(0,y*CELL); sx.lineTo(CW,y*CELL); sx.stroke(); }
+
+    // Axon
+    if (axonPts.length > 0) {
+      sx.save();
+      sx.strokeStyle = 'rgba(255,107,157,0.7)'; sx.lineWidth = 2.5; sx.lineCap = 'round';
+      sx.shadowColor = 'rgba(255,107,157,0.5)'; sx.shadowBlur = 6;
+      sx.setLineDash([5,5]);
+      sx.beginPath(); sx.moveTo(worldX(somaGX), worldY(somaGY));
+      for (var ai = 0; ai < axonPts.length; ai++) sx.lineTo(worldX(axonPts[ai].x), worldY(axonPts[ai].y));
+      sx.stroke(); sx.setLineDash([]); sx.restore();
+    }
+
+    // Branches
+    for (var bi = 0; bi < drawBranches.length; bi++) {
+      var fb = drawBranches[bi];
+      if (fb.path.length < 2) continue;
+      sx.save(); sx.lineWidth = 2.5; sx.lineCap = 'round'; sx.lineJoin = 'round';
+      var isAct = (bi === activeIdx);
+      sx.strokeStyle = isAct ? 'rgba(79,195,247,0.95)' : 'rgba(30,120,200,0.6)';
+      sx.shadowColor  = isAct ? 'rgba(79,195,247,0.7)'  : 'rgba(30,120,200,0.35)';
+      sx.shadowBlur = isAct ? 10 : 5;
+      sx.beginPath(); sx.moveTo(worldX(fb.path[0].x), worldY(fb.path[0].y));
+      for (var pi = 1; pi < fb.path.length; pi++) sx.lineTo(worldX(fb.path[pi].x), worldY(fb.path[pi].y));
+      sx.stroke(); sx.restore();
+    }
+
+    // Soma
+    var smx = worldX(somaGX), smy = worldY(somaGY), r = CELL * 1.3;
+    var sg = sx.createRadialGradient(smx,smy,0,smx,smy,r*1.8);
+    sg.addColorStop(0,'rgba(79,195,247,0.18)'); sg.addColorStop(1,'rgba(79,195,247,0)');
+    sx.beginPath(); sx.arc(smx,smy,r*1.8,0,Math.PI*2); sx.fillStyle=sg; sx.fill();
+    sx.save(); sx.translate(smx,smy);
+    sx.beginPath();
+    sx.moveTo(0,-r*0.8);
+    sx.bezierCurveTo(r*0.25,-r*0.35,r*0.7,r*0.2,r*0.7,r*0.6);
+    sx.bezierCurveTo(r*0.4,r*0.72,-r*0.4,r*0.72,-r*0.7,r*0.6);
+    sx.bezierCurveTo(-r*0.7,r*0.2,-r*0.25,-r*0.35,0,-r*0.8);
+    sx.closePath();
+    var fg2 = sx.createRadialGradient(0,-r*0.05,0,0,r*0.2,r*0.9);
+    fg2.addColorStop(0,'rgba(140,220,255,0.98)'); fg2.addColorStop(0.4,'rgba(40,130,220,0.88)'); fg2.addColorStop(1,'rgba(4,20,70,0.92)');
+    sx.fillStyle=fg2; sx.fill();
+    sx.strokeStyle='rgba(160,220,255,0.8)'; sx.lineWidth=1.8; sx.stroke();
+    sx.restore();
+
+    // Dots
+    for (var di = 0; di < drawDots.length; di++) {
+      var dot = drawDots[di];
+      sx.save(); sx.shadowColor='rgba(255,229,102,0.9)'; sx.shadowBlur=12;
+      sx.beginPath(); sx.arc(worldX(dot.x),worldY(dot.y),6,0,Math.PI*2);
+      sx.fillStyle='rgba(255,229,102,0.88)'; sx.fill(); sx.restore();
+    }
+
+    // Watermark
+    sx.globalAlpha = 0.07;
+    sx.fillStyle = '#ff4466';
+    sx.font = '900 ' + Math.floor(CW / 5) + 'px Courier New';
+    sx.textAlign = 'center';
+    sx.fillText('APOPTOSIS', CW/2, CH/2 + 20);
+    sx.globalAlpha = 1;
+
+    sx.restore();
+
+    // toBlob is async — must use callback pattern
+    try {
+      sc.toBlob(function(blob) {
+        callback(blob);
+      }, 'image/png');
+    } catch(e) {
+      callback(null);
+    }
+  }
+
+  function doShare(platform) {
+    var APP_URL = 'https://amyleesterling.github.io/neuron-game';
+    var shareText = 'I grew ' + score + ' synapses in NEURON \uD83E\uDDE0\u26A1 Play: ' + APP_URL;
+    var encodedText = encodeURIComponent(shareText);
+    var encodedUrl = encodeURIComponent(APP_URL);
+
+    // On iOS, try native share sheet (must be triggered directly from tap, not async)
+    if (navigator.share) {
+      var shareData = {title: 'NEURON \u2014 ' + score + ' synapses', text: shareText, url: APP_URL};
+      navigator.share(shareData).catch(function() {});
+      return;
+    }
+
+    // Desktop fallback — open directly (synchronous, no popup block)
+    if (platform === 'x') {
+      window.open('https://twitter.com/intent/tweet?text=' + encodedText, '_blank');
+    } else {
+      window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodedUrl, '_blank');
+    }
+  }
+
+  // Main button
+  mainBtn.addEventListener('click', function() {
+    try {
+      overlay.style.display = 'none';
+      olTitle.textContent = 'NEURON';
+      olTitle.style.color = '';
+      olTitle.style.textShadow = '';
+      olBody.innerHTML = '<div class="info">Grow dendrites · reach synaptic targets<br>Don\'t cross existing branches<br><br>TAP where you want to turn</div>';
+      mainBtn.textContent = 'FIRE SIGNAL';
+      gState = 'playing';
+      initGame();
+    } catch(e) {
+      var box = document.getElementById('errBox');
+      if (box) { box.style.display='block'; box.textContent='START ERR: '+e.message+' | '+e.stack; }
+    }
+  });
+
+  // Draw
+  function drawFrame(ts) {
+    ctx.clearRect(0, 0, CW, CH);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, CW, CH);
+
+    // Grid
+    ctx.strokeStyle = 'rgba(79,195,247,0.04)';
+    ctx.lineWidth = 0.5;
+    var x, y;
+    for (x = 0; x <= COLS; x++) { ctx.beginPath(); ctx.moveTo(x*CELL,0); ctx.lineTo(x*CELL,CH); ctx.stroke(); }
+    for (y = 0; y <= ROWS; y++) { ctx.beginPath(); ctx.moveTo(0,y*CELL); ctx.lineTo(CW,y*CELL); ctx.stroke(); }
+
+    // Axon
+    if (axonPts.length > 0) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,107,157,0.65)';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.shadowColor = 'rgba(255,107,157,0.5)';
+      ctx.shadowBlur = 7;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(worldX(somaGX), worldY(somaGY));
+      var ai;
+      for (ai = 0; ai < axonPts.length; ai++) ctx.lineTo(worldX(axonPts[ai].x), worldY(axonPts[ai].y));
+      ctx.stroke();
+      ctx.setLineDash([]);
+      var al = axonPts[axonPts.length - 1];
+      ctx.beginPath(); ctx.arc(worldX(al.x), worldY(al.y), 5, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,107,157,0.9)'; ctx.shadowBlur = 14; ctx.fill();
+      ctx.restore();
+    }
+
+    // Branches — path[0] is soma center, so line is always connected
+    var bi, b, pi, head, hx, hy;
+    for (bi = 0; bi < branches.length; bi++) {
+      b = branches[bi];
+      if (b.path.length < 2) continue;
+      var isActive = (bi === activeIdx);
+      ctx.save();
+      ctx.lineWidth = isActive ? 3 : 2.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = isActive ? 'rgba(79,195,247,0.95)' : 'rgba(30,120,200,0.55)';
+      ctx.shadowColor  = isActive ? 'rgba(79,195,247,0.7)'  : 'rgba(30,120,200,0.3)';
+      ctx.shadowBlur   = isActive ? 12 : 4;
+      ctx.beginPath();
+      ctx.moveTo(worldX(b.path[0].x), worldY(b.path[0].y));
+      for (pi = 1; pi < b.path.length; pi++) ctx.lineTo(worldX(b.path[pi].x), worldY(b.path[pi].y));
+      ctx.stroke();
+      if (isActive && b.growing) {
+        head = b.path[b.path.length - 1];
+        hx = worldX(head.x); hy = worldY(head.y);
+        ctx.beginPath(); ctx.arc(hx, hy, 5, 0, Math.PI*2);
+        ctx.fillStyle = '#4fc3f7'; ctx.shadowBlur = 18; ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(hx + b.dirX*9, hy + b.dirY*9);
+        ctx.lineTo(hx + b.dirX*9 - b.dirY*4, hy + b.dirY*9 + b.dirX*4);
+        ctx.lineTo(hx + b.dirX*9 + b.dirY*4, hy + b.dirY*9 - b.dirX*4);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(79,195,247,0.65)'; ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // Soma
+    var smx = worldX(somaGX), smy = worldY(somaGY), r = CELL * 1.3;
+    var sg = ctx.createRadialGradient(smx, smy, 0, smx, smy, r*1.8);
+    sg.addColorStop(0, 'rgba(79,195,247,0.18)'); sg.addColorStop(1, 'rgba(79,195,247,0)');
+    ctx.beginPath(); ctx.arc(smx, smy, r*1.8, 0, Math.PI*2); ctx.fillStyle = sg; ctx.fill();
+    ctx.save(); ctx.translate(smx, smy);
+    // Pyramidal cell shape: sharp apex at top, wide flat base, slightly bowed sides
+    ctx.beginPath();
+    ctx.moveTo(0, -r*0.8);
+    ctx.bezierCurveTo( r*0.25, -r*0.35,  r*0.7,  r*0.2,  r*0.7,  r*0.6);
+    ctx.bezierCurveTo( r*0.4,   r*0.72, -r*0.4,  r*0.72, -r*0.7,  r*0.6);
+    ctx.bezierCurveTo(-r*0.7,   r*0.2,  -r*0.25, -r*0.35, 0,      -r*0.8);
+    ctx.closePath();
+    var fg = ctx.createRadialGradient(0, -r*0.05, 0, 0, r*0.2, r*0.9);
+    fg.addColorStop(0,   'rgba(140,220,255,0.98)');
+    fg.addColorStop(0.4, 'rgba(40,130,220,0.88)');
+    fg.addColorStop(1,   'rgba(4,20,70,0.92)');
+    ctx.fillStyle = fg; ctx.fill();
+    ctx.strokeStyle = 'rgba(160,220,255,0.8)'; ctx.lineWidth = 1.8; ctx.stroke();
+    ctx.restore();
+
+    // Origin dots
+    var oi;
+    for (oi = 0; oi < origins.length; oi++) {
+      var inUse = false;
+      for (bi = 0; bi < branches.length; bi++) if (branches[bi].origName === origins[oi].name) { inUse = true; break; }
+      ctx.beginPath(); ctx.arc(worldX(origins[oi].x), worldY(origins[oi].y), 3, 0, Math.PI*2);
+      ctx.fillStyle = inUse ? 'rgba(79,195,247,0.85)' : 'rgba(79,195,247,0.15)'; ctx.fill();
+    }
+
+    // Dots
+    var t = ts / 1000;
+    var di, dot, pulse, dr, dg;
+    for (di = 0; di < dots.length; di++) {
+      dot = dots[di];
+      pulse = 0.75 + 0.25 * Math.sin(t * 3 + dot.phase);
+      dr = 6 * pulse;
+      dg = ctx.createRadialGradient(worldX(dot.x), worldY(dot.y), 0, worldX(dot.x), worldY(dot.y), dr*3.5);
+      dg.addColorStop(0, 'rgba(255,229,102,' + (0.32*pulse) + ')');
+      dg.addColorStop(1, 'rgba(255,229,102,0)');
+      ctx.beginPath(); ctx.arc(worldX(dot.x), worldY(dot.y), dr*3.5, 0, Math.PI*2);
+      ctx.fillStyle = dg; ctx.fill();
+      ctx.save();
+      ctx.shadowColor = 'rgba(255,229,102,0.9)'; ctx.shadowBlur = 13*pulse;
+      ctx.beginPath(); ctx.arc(worldX(dot.x), worldY(dot.y), dr, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,229,102,' + (0.88*pulse) + ')'; ctx.fill();
+      ctx.beginPath(); ctx.arc(worldX(dot.x) - dr*0.3, worldY(dot.y) - dr*0.3, dr*0.38, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,210,0.9)'; ctx.fill();
+      ctx.restore();
+    }
+
+    // Signals
+    var si, sig, path, n, pos, idx, frac, ax2, ay, bx2, by2, sx2, sy2, inAx;
+    for (si = signals.length - 1; si >= 0; si--) {
+      sig = signals[si];
+      sig.t += sig.spd;
+      if (sig.t >= 1) {
+        if (sig.onDone) sig.onDone();
+        signals.splice(si, 1);
+        continue;
+      }
+      path = sig.path; n = path.length;
+      pos = sig.t * (n - 1); idx = Math.floor(pos); frac = pos - idx;
+      if (idx >= n - 1) continue;
+      ax2 = worldX(path[idx].x); ay = worldY(path[idx].y);
+      bx2 = worldX(path[idx+1].x); by2 = worldY(path[idx+1].y);
+      sx2 = ax2 + (bx2-ax2)*frac; sy2 = ay + (by2-ay)*frac;
+      inAx = (idx >= n - axonPts.length - 1);
+      ctx.save();
+      ctx.shadowColor = inAx ? 'rgba(255,107,157,0.9)' : 'rgba(79,195,247,0.9)';
+      ctx.shadowBlur = 16;
+      ctx.beginPath(); ctx.arc(sx2, sy2, 5, 0, Math.PI*2);
+      ctx.fillStyle = inAx ? '#ff9dcc' : '#a8e6ff'; ctx.fill();
+      ctx.beginPath(); ctx.arc(sx2, sy2, 2, 0, Math.PI*2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+      ctx.restore();
+    }
+
+    // Particles
+    if (particlesActive) {
+      tickParticles();
+      var pi2, p;
+      for (pi2 = 0; pi2 < particles.length; pi2++) {
+        p = particles[pi2];
+        if (p.a <= 0) continue;
+        ctx.save();
+        ctx.shadowColor = 'rgba(' + p.col + ',0.8)'; ctx.shadowBlur = 8;
+        ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.4, p.r * p.a), 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(' + p.col + ',' + Math.min(1, p.a) + ')'; ctx.fill();
+        ctx.restore();
+      }
+    }
+  }
+
+  function refreshHUD() {
+    valScore.textContent = score;
+    var c = 0, i;
+    for (i = 0; i < branches.length; i++) if (branches[i].path.length > 2) c++;
+    valBranch.textContent = c;
+    var hearts = '';
+    var i;
+    for (i = 0; i < lives; i++) hearts += '\u2764\uFE0F';
+    for (i = lives; i < 2; i++) hearts += '\uD83D\uDC94';
+    valLives.textContent = hearts;
+  }
+
+  function flashScore() {
+    valScore.style.color = '#ffe566';
+    valScore.style.transform = 'scale(1.5)';
+    setTimeout(function() { valScore.style.color = '#4fc3f7'; valScore.style.transform = 'scale(1)'; }, 300);
+  }
+
+  // Loop
+  function loop(ts) {
+    try {
+      if (!lastTS) lastTS = ts;
+      var dt = ts - lastTS; if (dt > 100) dt = 100;
+      lastTS = ts;
+      drawFrame(ts);
+      if (gState === 'playing' && !isDead) {
+        accum += dt;
+        while (accum >= gameSpd) { accum -= gameSpd; step(); }
+      }
+    } catch(e) {
+      var box = document.getElementById('errBox');
+      if (box) { box.style.display='block'; box.textContent='LOOP ERR: '+e.message; }
+    }
+    requestAnimationFrame(loop);
+  }
+
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>

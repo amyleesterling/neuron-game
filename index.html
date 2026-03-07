@@ -372,11 +372,11 @@ function runGame() {
       }
     }
 
-    // Define 3 branch origins matching pyramidal shape
+    // Define 3 branch origins — straight out from center so lines are smooth
     origins = [
       {x: somaGX,   y: somaGY-4, dx: 0,  dy: -1, name: 'top'},
-      {x: somaGX-4, y: somaGY+2, dx: -1, dy: 0,  name: 'left'},
-      {x: somaGX+4, y: somaGY+2, dx: 1,  dy: 0,  name: 'right'}
+      {x: somaGX-4, y: somaGY,   dx: -1, dy: 0,  name: 'left'},
+      {x: somaGX+4, y: somaGY,   dx: 1,  dy: 0,  name: 'right'}
     ];
 
     // Axon exits from base of pyramid
@@ -1129,37 +1129,7 @@ function runGame() {
       }
     }
 
-    // Soma
-    var smx = worldX(somaGX), smy = worldY(somaGY), r = CELL * 2.8;
-    var sg = ctx.createRadialGradient(smx, smy, 0, smx, smy, r*1.8);
-    sg.addColorStop(0, 'rgba(79,195,247,0.18)'); sg.addColorStop(1, 'rgba(79,195,247,0)');
-    ctx.beginPath(); ctx.arc(smx, smy, r*1.8, 0, Math.PI*2); ctx.fillStyle = sg; ctx.fill();
-    ctx.save(); ctx.translate(smx, smy);
-    // Pyramidal cell shape: sharp apex at top, wide flat base, slightly bowed sides
-    ctx.beginPath();
-    ctx.moveTo(0, -r*0.8);
-    ctx.bezierCurveTo( r*0.25, -r*0.35,  r*0.7,  r*0.2,  r*0.7,  r*0.6);
-    ctx.bezierCurveTo( r*0.4,   r*0.72, -r*0.4,  r*0.72, -r*0.7,  r*0.6);
-    ctx.bezierCurveTo(-r*0.7,   r*0.2,  -r*0.25, -r*0.35, 0,      -r*0.8);
-    ctx.closePath();
-    var fg = ctx.createRadialGradient(0, -r*0.05, 0, 0, r*0.2, r*0.9);
-    fg.addColorStop(0,   'rgba(140,220,255,1)');
-    fg.addColorStop(0.4, 'rgba(40,130,220,1)');
-    fg.addColorStop(1,   'rgba(4,20,70,1)');
-    ctx.fillStyle = fg; ctx.fill();
-    ctx.strokeStyle = 'rgba(160,220,255,1)'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.restore();
-
-    // Origin dots
-    var oi;
-    for (oi = 0; oi < origins.length; oi++) {
-      var inUse = false;
-      for (bi = 0; bi < branches.length; bi++) if (branches[bi].origName === origins[oi].name) { inUse = true; break; }
-      ctx.beginPath(); ctx.arc(worldX(origins[oi].x), worldY(origins[oi].y), 3, 0, Math.PI*2);
-      ctx.fillStyle = inUse ? 'rgba(79,195,247,0.85)' : 'rgba(79,195,247,0.15)'; ctx.fill();
-    }
-
-    // Branches — drawn after soma so connector lines are visible on top
+    // Branches — drawn before soma so they appear to grow from behind it
     for (bi = 0; bi < branches.length; bi++) {
       b = branches[bi];
       if (b.path.length < 2) continue;
@@ -1193,6 +1163,36 @@ function runGame() {
         ctx.fillStyle = 'rgba(79,195,247,0.65)'; ctx.fill();
       }
       ctx.restore();
+    }
+
+    // Soma
+    var smx = worldX(somaGX), smy = worldY(somaGY), r = CELL * 2.8;
+    var sg = ctx.createRadialGradient(smx, smy, 0, smx, smy, r*1.8);
+    sg.addColorStop(0, 'rgba(79,195,247,0.18)'); sg.addColorStop(1, 'rgba(79,195,247,0)');
+    ctx.beginPath(); ctx.arc(smx, smy, r*1.8, 0, Math.PI*2); ctx.fillStyle = sg; ctx.fill();
+    ctx.save(); ctx.translate(smx, smy);
+    // Pyramidal cell shape: sharp apex at top, wide flat base, slightly bowed sides
+    ctx.beginPath();
+    ctx.moveTo(0, -r*0.8);
+    ctx.bezierCurveTo( r*0.25, -r*0.35,  r*0.7,  r*0.2,  r*0.7,  r*0.6);
+    ctx.bezierCurveTo( r*0.4,   r*0.72, -r*0.4,  r*0.72, -r*0.7,  r*0.6);
+    ctx.bezierCurveTo(-r*0.7,   r*0.2,  -r*0.25, -r*0.35, 0,      -r*0.8);
+    ctx.closePath();
+    var fg = ctx.createRadialGradient(0, -r*0.05, 0, 0, r*0.2, r*0.9);
+    fg.addColorStop(0,   'rgba(140,220,255,1)');
+    fg.addColorStop(0.4, 'rgba(40,130,220,1)');
+    fg.addColorStop(1,   'rgba(4,20,70,1)');
+    ctx.fillStyle = fg; ctx.fill();
+    ctx.strokeStyle = 'rgba(160,220,255,1)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.restore();
+
+    // Origin dots
+    var oi;
+    for (oi = 0; oi < origins.length; oi++) {
+      var inUse = false;
+      for (bi = 0; bi < branches.length; bi++) if (branches[bi].origName === origins[oi].name) { inUse = true; break; }
+      ctx.beginPath(); ctx.arc(worldX(origins[oi].x), worldY(origins[oi].y), 3, 0, Math.PI*2);
+      ctx.fillStyle = inUse ? 'rgba(79,195,247,0.85)' : 'rgba(79,195,247,0.15)'; ctx.fill();
     }
 
     // Dots

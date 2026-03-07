@@ -376,11 +376,12 @@ function runGame() {
       }
     }
 
-    // Define 3 branch origins at soma edge (orange dots)
+    // Define 3 branch origins at the 3 pointy corners of pyramidal soma
+    // Soma shape: apex at ~2 cells up, bottom corners at ~(±2, +2)
     origins = [
-      {x: somaGX,   y: somaGY-4, dx: 0,  dy: -1, name: 'top'},
-      {x: somaGX-4, y: somaGY+2, dx: -1, dy: 0,  name: 'left'},
-      {x: somaGX+4, y: somaGY+2, dx: 1,  dy: 0,  name: 'right'}
+      {x: somaGX,   y: somaGY-2, dx: 0,  dy: -1, name: 'top'},
+      {x: somaGX-2, y: somaGY+2, dx: -1, dy: 0,  name: 'left'},
+      {x: somaGX+2, y: somaGY+2, dx: 1,  dy: 0,  name: 'right'}
     ];
 
     // Axon exits from base of pyramid

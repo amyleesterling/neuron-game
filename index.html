@@ -375,11 +375,11 @@ function runGame() {
       }
     }
 
-    // Define 3 branch origins — straight out from center so lines are smooth
+    // Define 3 branch origins at soma edge (orange dots)
     origins = [
       {x: somaGX,   y: somaGY-4, dx: 0,  dy: -1, name: 'top'},
-      {x: somaGX-4, y: somaGY,   dx: -1, dy: 0,  name: 'left'},
-      {x: somaGX+4, y: somaGY,   dx: 1,  dy: 0,  name: 'right'}
+      {x: somaGX-4, y: somaGY+2, dx: -1, dy: 0,  name: 'left'},
+      {x: somaGX+4, y: somaGY+2, dx: 1,  dy: 0,  name: 'right'}
     ];
 
     // Axon exits from base of pyramid
@@ -398,14 +398,12 @@ function runGame() {
 
   function spawnBranch() {
     var pick = origins[Math.floor(Math.random() * origins.length)];
-    // Build path from soma center through origin and one step outward
-    var pSoma = {x: somaGX, y: somaGY};
-    var p0 = {x: pick.x, y: pick.y};
-    var p1 = {x: pick.x + pick.dx, y: pick.y + pick.dy};
+    var p0 = {x: pick.x, y: pick.y};  // start at orange origin dot
+    var p1 = {x: pick.x + pick.dx, y: pick.y + pick.dy};  // one step outward
     if (!occupied[cellKey(p0.x, p0.y)]) occupied[cellKey(p0.x, p0.y)] = true;
     if (!occupied[cellKey(p1.x, p1.y)]) occupied[cellKey(p1.x, p1.y)] = true;
     branches.push({
-      path: [pSoma, p0, p1],
+      path: [p0, p1],
       dirX: pick.dx,
       dirY: pick.dy,
       origName: pick.name,
@@ -1030,8 +1028,8 @@ function runGame() {
       sx.strokeStyle = isAct ? 'rgba(79,195,247,0.95)' : 'rgba(30,120,200,0.6)';
       sx.shadowColor  = isAct ? 'rgba(79,195,247,0.7)'  : 'rgba(30,120,200,0.35)';
       sx.shadowBlur = isAct ? 10 : 5;
-      sx.beginPath(); sx.moveTo(worldX(somaGX), worldY(somaGY));
-      for (var pi = 0; pi < fb.path.length; pi++) sx.lineTo(worldX(fb.path[pi].x), worldY(fb.path[pi].y));
+      sx.beginPath(); sx.moveTo(worldX(fb.path[0].x), worldY(fb.path[0].y));
+      for (var pi = 1; pi < fb.path.length; pi++) sx.lineTo(worldX(fb.path[pi].x), worldY(fb.path[pi].y));
       sx.stroke(); sx.restore();
     }
 
@@ -1205,8 +1203,8 @@ function runGame() {
       ctx.shadowColor  = isActive ? 'rgba(79,195,247,0.7)'  : 'rgba(30,120,200,0.3)';
       ctx.shadowBlur   = isActive ? 12 : 4;
       ctx.beginPath();
-      ctx.moveTo(worldX(somaGX), worldY(somaGY));
-      for (pi = 0; pi < b.path.length; pi++) ctx.lineTo(worldX(b.path[pi].x), worldY(b.path[pi].y));
+      ctx.moveTo(worldX(b.path[0].x), worldY(b.path[0].y));
+      for (pi = 1; pi < b.path.length; pi++) ctx.lineTo(worldX(b.path[pi].x), worldY(b.path[pi].y));
       ctx.stroke();
       if (isActive && b.growing) {
         head = b.path[b.path.length - 1];

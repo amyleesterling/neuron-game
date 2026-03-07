@@ -53,11 +53,13 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 #adOverlay .adTitle { font-size:14px; letter-spacing:0.2em; text-transform:uppercase; color:#4fc3f7; }
 #adOverlay .adTimer { font-size:32px; font-weight:900; color:#ffe566; text-shadow:0 0 20px rgba(255,229,102,0.7); }
 #adOverlay .adSkip { font-size:9px; opacity:0.3; letter-spacing:0.15em; text-transform:uppercase; margin-top:8px; }
-#adOverlay .adUnit { width:320px; max-width:90vw; min-height:100px; background:rgba(79,195,247,0.04); border:1px solid rgba(79,195,247,0.1); display:flex; align-items:center; justify-content:center; margin:8px auto; }
+#adVideoWrap { position:relative; width:480px; max-width:90vw; aspect-ratio:16/9; background:#000; border:1px solid rgba(79,195,247,0.2); }
+#adVideo { width:100%; height:100%; }
+#adContainer { position:absolute; inset:0; }
 .adLifeBtn { background:transparent; border:1px solid #ffe566; color:#ffe566; font-family:'Courier New',monospace; font-size:11px; letter-spacing:0.15em; padding:12px 24px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; animation:adPulse 1.5s ease-in-out infinite; }
 @keyframes adPulse { 0%,100% { box-shadow:0 0 8px rgba(255,229,102,0.3); } 50% { box-shadow:0 0 20px rgba(255,229,102,0.6); } }
 </style>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897605867387651" crossorigin="anonymous"></script>
+<script src="https://imasdk.googleapis.com/js/sdkloader/ima3.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
@@ -76,11 +78,12 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 
 <div id="adOverlay">
   <div class="adTitle">⚡ EXTRA LIFE ⚡</div>
-  <div class="adUnit">
-    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-0897605867387651" data-ad-slot="XXXXXXXXXX" data-ad-format="rectangle" data-full-width-responsive="false"></ins>
+  <div id="adVideoWrap">
+    <video id="adVideo" playsinline></video>
+    <div id="adContainer"></div>
   </div>
-  <div class="adTimer" id="adCountdown">5</div>
-  <div class="adSkip">Granting extra life...</div>
+  <div class="adTimer" id="adCountdown"></div>
+  <div class="adSkip">Granting extra life when ad finishes...</div>
 </div>
 
 <div id="overlay">
@@ -757,22 +760,79 @@ function runGame() {
     adLifeUsed = true;
     var adOl = document.getElementById('adOverlay');
     var adCD = document.getElementById('adCountdown');
+    var adVideo = document.getElementById('adVideo');
+    var adContainerEl = document.getElementById('adContainer');
     adOl.className = 'adShow';
-    var remaining = 5;
-    adCD.textContent = remaining;
+    adCD.textContent = '';
 
-    // Try to push ad
-    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}
+    // Google IMA SDK video ad
+    try {
+      var adDisplayContainer = new google.ima.AdDisplayContainer(adContainerEl, adVideo);
+      adDisplayContainer.initialize();
+      var adsLoader = new google.ima.AdsLoader(adDisplayContainer);
 
-    var adInt = setInterval(function() {
-      remaining--;
-      adCD.textContent = remaining;
-      if (remaining <= 0) {
-        clearInterval(adInt);
+      adsLoader.addEventListener(google.ima.AdsManagerLoadedEvent.Type.ADS_MANAGER_LOADED, function(e) {
+        var adsManager = e.getAdsManager(adVideo);
+        adsManager.addEventListener(google.ima.AdEvent.Type.COMPLETE, function() {
+          adsManager.destroy();
+          adOl.className = '';
+          grantAdLife();
+        });
+        adsManager.addEventListener(google.ima.AdEvent.Type.ALL_ADS_COMPLETED, function() {
+          adsManager.destroy();
+        });
+        adsManager.addEventListener(google.ima.AdErrorEvent.Type.AD_ERROR, function() {
+          adsManager.destroy();
+          adOl.className = '';
+          grantAdLife(); // still grant life on ad error
+        });
+        adsManager.addEventListener(google.ima.AdEvent.Type.STARTED, function() {
+          adCD.textContent = 'Playing ad...';
+        });
+        adsManager.addEventListener(google.ima.AdEvent.Type.AD_PROGRESS, function(e) {
+          var data = e.getAdData();
+          if (data.currentTime && data.duration) {
+            var left = Math.ceil(data.duration - data.currentTime);
+            adCD.textContent = left + 's';
+          }
+        });
+        try {
+          var w = Math.min(480, window.innerWidth - 48);
+          var h = Math.round(w * 9 / 16);
+          adsManager.init(w, h, google.ima.ViewMode.NORMAL);
+          adsManager.start();
+        } catch(err) {
+          adOl.className = '';
+          grantAdLife();
+        }
+      }, false);
+
+      adsLoader.addEventListener(google.ima.AdErrorEvent.Type.AD_ERROR, function() {
         adOl.className = '';
-        grantAdLife();
-      }
-    }, 1000);
+        grantAdLife(); // grant life even if no ad available
+      }, false);
+
+      // Request ad — using Google sample tag for now (replace with your Ad Manager tag later)
+      var adsRequest = new google.ima.AdsRequest();
+      adsRequest.adTagUrl = 'https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/single_ad_samples&sz=640x480&cust_params=sample_ct%3Dlinear&ciu_szs=300x250%2C728x90&gdfp_req=1&output=vast&unviewed_position_start=1&env=vp&impl=s&correlator=' + Date.now();
+      adsRequest.linearAdSlotWidth = 480;
+      adsRequest.linearAdSlotHeight = 270;
+      adsLoader.requestAds(adsRequest);
+
+    } catch(e) {
+      // IMA SDK not loaded — fallback countdown
+      var remaining = 5;
+      adCD.textContent = remaining;
+      var adInt = setInterval(function() {
+        remaining--;
+        adCD.textContent = remaining;
+        if (remaining <= 0) {
+          clearInterval(adInt);
+          adOl.className = '';
+          grantAdLife();
+        }
+      }, 1000);
+    }
   }
 
   function grantAdLife() {

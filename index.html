@@ -1029,8 +1029,8 @@ function runGame() {
       sx.strokeStyle = isAct ? 'rgba(79,195,247,0.95)' : 'rgba(30,120,200,0.6)';
       sx.shadowColor  = isAct ? 'rgba(79,195,247,0.7)'  : 'rgba(30,120,200,0.35)';
       sx.shadowBlur = isAct ? 10 : 5;
-      sx.beginPath(); sx.moveTo(worldX(fb.path[0].x), worldY(fb.path[0].y));
-      for (var pi = 1; pi < fb.path.length; pi++) sx.lineTo(worldX(fb.path[pi].x), worldY(fb.path[pi].y));
+      sx.beginPath(); sx.moveTo(worldX(somaGX), worldY(somaGY));
+      for (var pi = 0; pi < fb.path.length; pi++) sx.lineTo(worldX(fb.path[pi].x), worldY(fb.path[pi].y));
       sx.stroke(); sx.restore();
     }
 
@@ -1204,8 +1204,8 @@ function runGame() {
       ctx.shadowColor  = isActive ? 'rgba(79,195,247,0.7)'  : 'rgba(30,120,200,0.3)';
       ctx.shadowBlur   = isActive ? 12 : 4;
       ctx.beginPath();
-      ctx.moveTo(worldX(b.path[0].x), worldY(b.path[0].y));
-      for (pi = 1; pi < b.path.length; pi++) ctx.lineTo(worldX(b.path[pi].x), worldY(b.path[pi].y));
+      ctx.moveTo(worldX(somaGX), worldY(somaGY));
+      for (pi = 0; pi < b.path.length; pi++) ctx.lineTo(worldX(b.path[pi].x), worldY(b.path[pi].y));
       ctx.stroke();
       if (isActive && b.growing) {
         head = b.path[b.path.length - 1];

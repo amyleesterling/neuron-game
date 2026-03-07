@@ -395,17 +395,19 @@ function runGame() {
 
   function spawnBranch() {
     var pick = origins[Math.floor(Math.random() * origins.length)];
-    var p0 = {x: pick.x, y: pick.y};  // start at origin point
-    var p1 = {x: pick.x + pick.dx, y: pick.y + pick.dy};  // one step outward
+    // Build path from soma center through origin and one step outward
+    var pSoma = {x: somaGX, y: somaGY};
+    var p0 = {x: pick.x, y: pick.y};
+    var p1 = {x: pick.x + pick.dx, y: pick.y + pick.dy};
     if (!occupied[cellKey(p0.x, p0.y)]) occupied[cellKey(p0.x, p0.y)] = true;
     if (!occupied[cellKey(p1.x, p1.y)]) occupied[cellKey(p1.x, p1.y)] = true;
     branches.push({
-      path: [p0, p1],
+      path: [pSoma, p0, p1],
       dirX: pick.dx,
       dirY: pick.dy,
       origName: pick.name,
       growing: false,
-      onExistingPath: true  // starts true — branch begins on soma/existing path
+      onExistingPath: true
     });
     return true;
   }
@@ -968,8 +970,8 @@ function runGame() {
       sx.strokeStyle = isAct ? 'rgba(79,195,247,0.95)' : 'rgba(30,120,200,0.6)';
       sx.shadowColor  = isAct ? 'rgba(79,195,247,0.7)'  : 'rgba(30,120,200,0.35)';
       sx.shadowBlur = isAct ? 10 : 5;
-      sx.beginPath(); sx.moveTo(worldX(fb.path[0].x), worldY(fb.path[0].y));
-      for (var pi = 1; pi < fb.path.length; pi++) sx.lineTo(worldX(fb.path[pi].x), worldY(fb.path[pi].y));
+      sx.beginPath(); sx.moveTo(worldX(somaGX), worldY(somaGY));
+      for (var pi = 0; pi < fb.path.length; pi++) sx.lineTo(worldX(fb.path[pi].x), worldY(fb.path[pi].y));
       sx.stroke(); sx.restore();
     }
 
@@ -1127,42 +1129,6 @@ function runGame() {
       }
     }
 
-    // Branches — path[0] is soma center, so line is always connected
-    for (bi = 0; bi < branches.length; bi++) {
-      b = branches[bi];
-      if (b.path.length < 2) continue;
-      var isActive = (bi === activeIdx);
-      ctx.save();
-      var bw = isDemo
-        ? (isActive ? Math.max(CELL * 0.15, 1.5) : Math.max(CELL * 0.1, 1))
-        : (isActive ? Math.max(CELL * 0.2, 2.5) : Math.max(CELL * 0.15, 2));
-      ctx.lineWidth = bw;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.strokeStyle = isActive ? 'rgba(79,195,247,0.95)' : 'rgba(30,120,200,0.55)';
-      ctx.shadowColor  = isActive ? 'rgba(79,195,247,0.7)'  : 'rgba(30,120,200,0.3)';
-      ctx.shadowBlur   = isActive ? 12 : 4;
-      ctx.beginPath();
-      ctx.moveTo(worldX(b.path[0].x), worldY(b.path[0].y));
-      for (pi = 1; pi < b.path.length; pi++) ctx.lineTo(worldX(b.path[pi].x), worldY(b.path[pi].y));
-      ctx.stroke();
-      if (isActive && b.growing) {
-        head = b.path[b.path.length - 1];
-        hx = worldX(head.x); hy = worldY(head.y);
-        var hr = Math.max(CELL * 0.22, 4);
-        ctx.beginPath(); ctx.arc(hx, hy, hr, 0, Math.PI*2);
-        ctx.fillStyle = '#4fc3f7'; ctx.shadowBlur = 18; ctx.fill();
-        var arrL = CELL * 0.4, arrW = CELL * 0.18;
-        ctx.beginPath();
-        ctx.moveTo(hx + b.dirX*arrL, hy + b.dirY*arrL);
-        ctx.lineTo(hx + b.dirX*arrL - b.dirY*arrW, hy + b.dirY*arrL + b.dirX*arrW);
-        ctx.lineTo(hx + b.dirX*arrL + b.dirY*arrW, hy + b.dirY*arrL - b.dirX*arrW);
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(79,195,247,0.65)'; ctx.fill();
-      }
-      ctx.restore();
-    }
-
     // Soma
     var smx = worldX(somaGX), smy = worldY(somaGY), r = CELL * 2.8;
     var sg = ctx.createRadialGradient(smx, smy, 0, smx, smy, r*1.8);
@@ -1191,6 +1157,42 @@ function runGame() {
       for (bi = 0; bi < branches.length; bi++) if (branches[bi].origName === origins[oi].name) { inUse = true; break; }
       ctx.beginPath(); ctx.arc(worldX(origins[oi].x), worldY(origins[oi].y), 3, 0, Math.PI*2);
       ctx.fillStyle = inUse ? 'rgba(79,195,247,0.85)' : 'rgba(79,195,247,0.15)'; ctx.fill();
+    }
+
+    // Branches — drawn after soma so connector lines are visible on top
+    for (bi = 0; bi < branches.length; bi++) {
+      b = branches[bi];
+      if (b.path.length < 2) continue;
+      var isActive = (bi === activeIdx);
+      ctx.save();
+      var bw = isDemo
+        ? (isActive ? Math.max(CELL * 0.15, 1.5) : Math.max(CELL * 0.1, 1))
+        : (isActive ? Math.max(CELL * 0.2, 2.5) : Math.max(CELL * 0.15, 2));
+      ctx.lineWidth = bw;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = isActive ? 'rgba(79,195,247,0.95)' : 'rgba(30,120,200,0.55)';
+      ctx.shadowColor  = isActive ? 'rgba(79,195,247,0.7)'  : 'rgba(30,120,200,0.3)';
+      ctx.shadowBlur   = isActive ? 12 : 4;
+      ctx.beginPath();
+      ctx.moveTo(worldX(somaGX), worldY(somaGY));
+      for (pi = 0; pi < b.path.length; pi++) ctx.lineTo(worldX(b.path[pi].x), worldY(b.path[pi].y));
+      ctx.stroke();
+      if (isActive && b.growing) {
+        head = b.path[b.path.length - 1];
+        hx = worldX(head.x); hy = worldY(head.y);
+        var hr = Math.max(CELL * 0.22, 4);
+        ctx.beginPath(); ctx.arc(hx, hy, hr, 0, Math.PI*2);
+        ctx.fillStyle = '#4fc3f7'; ctx.shadowBlur = 18; ctx.fill();
+        var arrL = CELL * 0.4, arrW = CELL * 0.18;
+        ctx.beginPath();
+        ctx.moveTo(hx + b.dirX*arrL, hy + b.dirY*arrL);
+        ctx.lineTo(hx + b.dirX*arrL - b.dirY*arrW, hy + b.dirY*arrL + b.dirX*arrW);
+        ctx.lineTo(hx + b.dirX*arrL + b.dirY*arrW, hy + b.dirY*arrL - b.dirX*arrW);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(79,195,247,0.65)'; ctx.fill();
+      }
+      ctx.restore();
     }
 
     // Dots

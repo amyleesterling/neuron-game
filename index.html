@@ -732,8 +732,11 @@ function runGame() {
     setTimeout(showResults, 2200);
   }
 
+  var adOfferActive = false;
+
   function showAdLifeOffer() {
     // Pause game and show offer button on the overlay
+    adOfferActive = true;
     olTitle.textContent = 'NEURON';
     olTitle.style.color = '#4fc3f7';
     olTitle.style.textShadow = '0 0 30px rgba(79,195,247,0.9)';
@@ -751,6 +754,7 @@ function runGame() {
 
     var watchBtn = document.getElementById('watchAdBtn');
     watchBtn.addEventListener('click', function() {
+      adOfferActive = false;
       overlay.style.display = 'none';
       startAdCountdown();
     });
@@ -1112,6 +1116,14 @@ function runGame() {
   // Main button
   mainBtn.addEventListener('click', function() {
     try {
+      if (adOfferActive) {
+        // Player declined ad — proceed to death + results screen so score is submitted
+        adOfferActive = false;
+        adLifeUsed = true;
+        overlay.style.display = 'none';
+        doFullDeath();
+        return;
+      }
       overlay.style.display = 'none';
       olTitle.textContent = 'NEURON';
       olTitle.style.color = '';

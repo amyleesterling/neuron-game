@@ -1714,8 +1714,7 @@ function runGame() {
     sb.from('neuron_snake_leaderboard').select('id', {count: 'exact', head: true})
       .then(function(res) {
         if (res.count != null) {
-          var local = parseInt(localStorage.getItem('neuron_games_played') || '0', 10);
-          globalNeuronsPlayed = Math.max(res.count, local);
+          globalNeuronsPlayed = res.count;
           updateLobbyStats();
         }
       });
@@ -1724,12 +1723,10 @@ function runGame() {
   function updateLobbyStats() {
     var el = document.getElementById('lobbyStats');
     if (!el) return;
-    var local = parseInt(localStorage.getItem('neuron_games_played') || '0', 10);
-    var count = Math.max(globalNeuronsPlayed, local);
-    if (count === 0) { el.style.display = 'none'; return; }
+    if (globalNeuronsPlayed === 0) { el.style.display = 'none'; return; }
     el.style.display = '';
     el.innerHTML =
-      '<div class="lobbyStat"><span class="lsNum">' + count.toLocaleString() + '</span><span class="lsLabel">neurons played</span></div>';
+      '<div class="lobbyStat"><span class="lsNum">' + globalNeuronsPlayed.toLocaleString() + '</span><span class="lsLabel">neurons played</span></div>';
   }
 
   // Add tap instruction on mobile, fetch global count, show stats
@@ -1780,6 +1777,23 @@ function runGame() {
       var _sb = document.getElementById('submitBtn');
       if (_ni && (!_sb || _sb.textContent !== '\u2713')) return;
       e.preventDefault();
+      // Scroll to player's row before restarting
+      var _yr = document.getElementById('lbYouRow');
+      var _mb = document.getElementById('lbMoreBtn');
+      // If MORE button exists, expand list first (auto-scrolls to player row)
+      if (_mb && !_mb.disabled) { _mb.click(); return; }
+      // If player row exists but not in view, scroll to it
+      if (_yr) {
+        var _la = document.getElementById('lbArea');
+        if (_la) {
+          var _ar = _la.getBoundingClientRect();
+          var _rr = _yr.getBoundingClientRect();
+          if (_rr.top < _ar.top || _rr.bottom > _ar.bottom) {
+            _yr.scrollIntoView({behavior: 'smooth', block: 'center'});
+            return;
+          }
+        }
+      }
       mainBtn.click();
     }
   });

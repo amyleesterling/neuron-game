@@ -44,6 +44,13 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .lbTable .lbName { color:#4fc3f7; }
 .lbTable .lbScore { color:#ffe566; font-weight:700; }
 .lbTable .lbYou td { color:#ff6b9d; }
+.lbTable .lbYou { animation: lbHighlight 1.5s ease-out; }
+@keyframes lbHighlight { 0% { background:rgba(255,107,157,0.4); transform:scale(1.08); } 100% { background:transparent; transform:scale(1); } }
+.lbMedal { font-size:14px; margin-right:2px; }
+.submitPop { animation: submitPop 0.5s ease-out; }
+@keyframes submitPop { 0% { transform:scale(1); } 30% { transform:scale(1.4); } 50% { transform:scale(0.9); } 100% { transform:scale(1); } }
+.submitFlash { animation: submitFlash 0.8s ease-out; }
+@keyframes submitFlash { 0% { box-shadow:0 0 0px rgba(255,229,102,0); } 30% { box-shadow:0 0 30px rgba(255,229,102,0.8); } 100% { box-shadow:0 0 0px rgba(255,229,102,0); } }
 .lbTitle { font-size:9px; opacity:0.4; letter-spacing:0.2em; text-transform:uppercase; margin-top:12px; }
 .lbTabs { display:flex; gap:4px; justify-content:center; margin-top:10px; }
 .lbTab { background:transparent; border:1px solid rgba(79,195,247,0.25); color:rgba(160,216,240,0.4); font-family:'Courier New',monospace; font-size:9px; letter-spacing:0.15em; padding:6px 14px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
@@ -142,11 +149,18 @@ function runGame() {
   function buildLeaderboardHTML(rows, myScore, label) {
     var title = label || (platform === 'mobile' ? '\uD83D\uDCF1 Mobile' : '\uD83D\uDDA5\uFE0F Desktop');
     if (!rows || rows.length === 0) return '<div class="lbTitle">' + title + ' Leaderboard</div><div class="info">No scores yet</div>';
+    var medals = [
+      '<span class="lbMedal" style="color:#ffd700">🧠</span>',  // gold neuron
+      '<span class="lbMedal" style="color:#c0c0c0">🧠</span>',  // silver neuron
+      '<span class="lbMedal" style="color:#cd7f32">🧠</span>'   // bronze neuron
+    ];
     var html = '<div class="lbTitle">' + title + ' Leaderboard</div><table class="lbTable"><tr><th>Rank</th><th>Name</th><th>Score</th></tr>';
     for (var i = 0; i < rows.length; i++) {
       var isYou = (rows[i].name === playerName && rows[i].score === myScore);
-      html += '<tr' + (isYou ? ' class="lbYou"' : '') + '>';
-      html += '<td class="lbRank">' + (i+1) + '</td>';
+      var medal = i < 3 ? medals[i] : '';
+      var rankText = i < 3 ? medal : '<span class="lbRank">' + (i+1) + '</span>';
+      html += '<tr' + (isYou ? ' class="lbYou" id="lbYouRow"' : '') + '>';
+      html += '<td>' + rankText + '</td>';
       html += '<td class="lbName">' + rows[i].name + '</td>';
       html += '<td class="lbScore">' + rows[i].score + '</td>';
       html += '</tr>';
@@ -947,12 +961,23 @@ function runGame() {
       if (!n || submitted) return;
       submitted = true;
       submitBtnEl.textContent = '...';
+      submitBtnEl.className = 'submitBtn submitFlash';
       submitScore(n, score, function(rows) {
+        // Pop animation on checkmark
         submitBtnEl.textContent = '\u2713';
         submitBtnEl.style.borderColor = '#4fc3f7';
         submitBtnEl.style.color = '#4fc3f7';
-        var label = platform === 'mobile' ? '\uD83D\uDCF1 Mobile' : '\uD83D\uDDA5\uFE0F Desktop';
-        lbArea.innerHTML = buildLeaderboardHTML(rows, score, label);
+        submitBtnEl.className = 'submitBtn submitPop';
+        // Brief delay then reveal leaderboard with highlight
+        setTimeout(function() {
+          var label = platform === 'mobile' ? '\uD83D\uDCF1 Mobile' : '\uD83D\uDDA5\uFE0F Desktop';
+          lbArea.innerHTML = buildLeaderboardHTML(rows, score, label);
+          // Scroll to and highlight the player's row
+          var youRow = document.getElementById('lbYouRow');
+          if (youRow) {
+            youRow.scrollIntoView({behavior: 'smooth', block: 'center'});
+          }
+        }, 400);
       });
     }
 

@@ -1472,7 +1472,17 @@ function runGame() {
 
     function doSubmit() {
       var n = nameIn.value.trim().toUpperCase().replace(/[<>"'&]/g, '');
-      if (!n || submitted || score === 0) return;
+      if (!n || score === 0) return;
+      // Already submitted (e.g. auto-submit) — replay checkmark animation for feedback
+      if (submitted) {
+        if (submitBtnEl.textContent === '\u2713') {
+          submitBtnEl.className = 'submitBtn';
+          void submitBtnEl.offsetWidth;
+          submitBtnEl.className = 'submitBtn submitPop';
+          nameIn.blur();
+        }
+        return;
+      }
       if (hasBannedWord(n)) {
         submitBtnEl.textContent = '\uD83D\uDE08';
         submitBtnEl.className = 'submitBtn submitDevil';

@@ -943,10 +943,6 @@ function runGame() {
         '<input class="nameInput" id="nameIn" placeholder="YOUR NAME" maxlength="12"' + nameVal + '>' +
         '<button class="submitBtn" id="submitBtn">SUBMIT</button>' +
       '</div>' +
-      '<div class="lbTabs">' +
-        '<button class="lbTab' + (isMobile ? ' lbTabActive' : '') + '" id="tabMobile">\uD83D\uDCF1 MOBILE</button>' +
-        '<button class="lbTab' + (!isMobile ? ' lbTabActive' : '') + '" id="tabDesktop">\uD83D\uDDA5\uFE0F DESKTOP</button>' +
-      '</div>' +
       '<div id="lbArea"><div class="lbTitle">Loading leaderboard...</div></div>' +
       '<div class="shareRow">' +
         '<button class="shareBtn" id="btnX">SHARE ON X</button>' +
@@ -1014,12 +1010,6 @@ function runGame() {
         submitBtnEl.className = 'submitBtn';
       }
     });
-
-    // Tab switching
-    var tmBtn = document.getElementById('tabMobile');
-    var tdBtn = document.getElementById('tabDesktop');
-    if (tmBtn) tmBtn.addEventListener('click', function() { showLb('mobile', submitted ? score : -1); });
-    if (tdBtn) tdBtn.addEventListener('click', function() { showLb('desktop', submitted ? score : -1); });
 
     // If name already saved, auto-submit
     if (playerName) {

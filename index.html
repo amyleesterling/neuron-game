@@ -134,16 +134,29 @@ function runGame() {
   function fetchLeaderboard(plat, callback) {
     var query = sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(10);
     if (plat) query = query.eq('platform', plat);
-    query.then(function(res) { callback(res.data || []); })
-      .catch(function() { callback([]); });
+    query.then(function(res) {
+      if (res.error && plat) {
+        // Fallback: fetch without platform filter
+        sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(10)
+          .then(function(res2) { callback(res2.data || []); });
+      } else {
+        callback(res.data || []);
+      }
+    }).catch(function() { callback([]); });
   }
 
   function submitScore(name, sc, callback) {
     playerName = name;
     localStorage.setItem('neuron_name', name);
     sb.from('neuron_snake_leaderboard').insert({name: name, score: sc, platform: platform})
+      .then(function(res) {
+        if (res.error) {
+          // Fallback: try without platform column
+          return sb.from('neuron_snake_leaderboard').insert({name: name, score: sc});
+        }
+      })
       .then(function() { fetchLeaderboard(platform, callback); })
-      .catch(function() { callback([]); });
+      .catch(function() { fetchLeaderboard(null, callback); });
   }
 
   function buildLeaderboardHTML(rows, myScore, label) {
@@ -983,6 +996,16 @@ function runGame() {
 
     submitBtnEl.addEventListener('click', doSubmit);
     nameIn.addEventListener('keydown', function(e) { if (e.key === 'Enter') doSubmit(); });
+    // Allow re-submit if user changes name
+    nameIn.addEventListener('input', function() {
+      if (submitted) {
+        submitted = false;
+        submitBtnEl.textContent = 'SUBMIT';
+        submitBtnEl.style.borderColor = '#ffe566';
+        submitBtnEl.style.color = '#ffe566';
+        submitBtnEl.className = 'submitBtn';
+      }
+    });
 
     // Tab switching
     var tmBtn = document.getElementById('tabMobile');

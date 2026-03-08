@@ -1483,10 +1483,12 @@ function runGame() {
       submitBtnEl.textContent = '...';
       submitBtnEl.className = 'submitBtn submitFlash';
       submitScore(n, score, function() {
-        // Pop animation on checkmark
+        // Pop animation on checkmark — force reflow to guarantee animation triggers
         submitBtnEl.textContent = '\u2713';
         submitBtnEl.style.borderColor = '#4fc3f7';
         submitBtnEl.style.color = '#4fc3f7';
+        submitBtnEl.className = 'submitBtn';
+        void submitBtnEl.offsetWidth;
         submitBtnEl.className = 'submitBtn submitPop';
         nameIn.blur(); // Release focus so Enter key can trigger REGENERATE
         // Brief delay then reveal leaderboard with highlight

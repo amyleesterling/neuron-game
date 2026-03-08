@@ -63,6 +63,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .lbTabs { display:flex; gap:4px; justify-content:center; margin-top:10px; }
 .lbTab { background:transparent; border:1px solid rgba(79,195,247,0.25); color:rgba(160,216,240,0.4); font-family:'Courier New',monospace; font-size:9px; letter-spacing:0.15em; padding:6px 14px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
 .lbTabActive { border-color:#4fc3f7; color:#4fc3f7; }
+.lbTabLocked { opacity:0.3; cursor:not-allowed; }
 #adOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:50; display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; padding:24px; }
 #adOverlay.adShow { display:flex; }
 #adOverlay .adTitle { font-size:14px; letter-spacing:0.2em; text-transform:uppercase; color:#4fc3f7; }
@@ -943,6 +944,10 @@ function runGame() {
         '<input class="nameInput" id="nameIn" placeholder="YOUR NAME" maxlength="12"' + nameVal + '>' +
         '<button class="submitBtn" id="submitBtn">SUBMIT</button>' +
       '</div>' +
+      '<div class="lbTabs">' +
+        '<button class="lbTab' + (isMobile ? ' lbTabActive' : '') + ' lbTabLocked" id="tabMobile" disabled>\uD83D\uDCF1 MOBILE</button>' +
+        '<button class="lbTab' + (!isMobile ? ' lbTabActive' : '') + ' lbTabLocked" id="tabDesktop" disabled>\uD83D\uDDA5\uFE0F DESKTOP</button>' +
+      '</div>' +
       '<div id="lbArea"><div class="lbTitle">Loading leaderboard...</div></div>' +
       '<div class="shareRow">' +
         '<button class="shareBtn" id="btnX">SHARE ON X</button>' +
@@ -994,8 +999,17 @@ function runGame() {
           if (youRow) {
             youRow.scrollIntoView({behavior: 'smooth', block: 'center'});
           }
+          // Unlock tabs after submitting
+          unlockTabs();
         }, 400);
       });
+    }
+
+    function unlockTabs() {
+      var tm = document.getElementById('tabMobile');
+      var td = document.getElementById('tabDesktop');
+      if (tm) { tm.disabled = false; tm.classList.remove('lbTabLocked'); }
+      if (td) { td.disabled = false; td.classList.remove('lbTabLocked'); }
     }
 
     submitBtnEl.addEventListener('click', doSubmit);
@@ -1010,6 +1024,12 @@ function runGame() {
         submitBtnEl.className = 'submitBtn';
       }
     });
+
+    // Tab switching (only works after submit unlocks them)
+    var tmBtn = document.getElementById('tabMobile');
+    var tdBtn = document.getElementById('tabDesktop');
+    if (tmBtn) tmBtn.addEventListener('click', function() { if (!this.disabled) showLb('mobile', submitted ? score : -1); });
+    if (tdBtn) tdBtn.addEventListener('click', function() { if (!this.disabled) showLb('desktop', submitted ? score : -1); });
 
     // If name already saved, auto-submit
     if (playerName) {

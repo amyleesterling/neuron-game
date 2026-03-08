@@ -1370,9 +1370,16 @@ function runGame() {
     // Track cumulative synapses
     var cs = parseInt(localStorage.getItem('neuron_total_synapses') || '0', 10) + score;
     localStorage.setItem('neuron_total_synapses', cs);
-    var prevBest = parseInt(localStorage.getItem('neuron_best_score') || '0', 10);
-    var isNewHighScore = score > 0 && score > prevBest;
-    if (isNewHighScore) localStorage.setItem('neuron_best_score', String(score));
+    var prevBestStr = localStorage.getItem('neuron_best_score');
+    var isNewHighScore = false;
+    if (prevBestStr === null) {
+      // First game with this feature — seed baseline, no celebration
+      if (score > 0) localStorage.setItem('neuron_best_score', String(score));
+    } else {
+      var prevBest = parseInt(prevBestStr, 10);
+      isNewHighScore = score > 0 && score > prevBest;
+      if (isNewHighScore) localStorage.setItem('neuron_best_score', String(score));
+    }
     olTitle.textContent = 'APOPTOSIS';
     olTitle.style.color = '#ff4466';
     olTitle.style.textShadow = '0 0 30px rgba(255,68,102,0.8)';
@@ -1481,6 +1488,7 @@ function runGame() {
         submitBtnEl.style.borderColor = '#4fc3f7';
         submitBtnEl.style.color = '#4fc3f7';
         submitBtnEl.className = 'submitBtn submitPop';
+        nameIn.blur(); // Release focus so Enter key can trigger REGENERATE
         // Brief delay then reveal leaderboard with highlight
         setTimeout(function() {
           unlockTabs();
@@ -1506,10 +1514,7 @@ function runGame() {
     if (nameIn && submitBtnEl) {
       submitBtnEl.addEventListener('click', doSubmit);
       nameIn.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-          e.preventDefault(); e.stopPropagation();
-          if (submitted) { mainBtn.click(); } else { doSubmit(); }
-        }
+        if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); doSubmit(); }
       });
       // Allow re-submit if user changes name + banned word check
       nameIn.addEventListener('input', function() {

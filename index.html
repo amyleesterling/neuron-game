@@ -171,6 +171,7 @@ function runGame() {
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphdnRoa25rc2RjcmxoaWFhcHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2MzUyOTIsImV4cCI6MjA4ODIxMTI5Mn0.APdwuQ-uudyHISBr7Dj6HTylO7qavJ0HhB32E5X434g'
   );
   var playerName = localStorage.getItem('neuron_name') || '';
+  function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
   var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 900);
   var platform = isMobile ? 'mobile' : 'desktop';
 
@@ -249,7 +250,7 @@ function runGame() {
       var rankText = i < 3 ? medal : '<span class="lbRank">' + (i+1) + '</span>';
       html += '<tr' + (isYou ? ' class="lbYou" id="lbYouRow"' : '') + '>';
       html += '<td>' + rankText + '</td>';
-      html += '<td class="lbName">' + rows[i].name + '</td>';
+      html += '<td class="lbName">' + esc(rows[i].name) + '</td>';
       html += '<td class="lbScore">' + rows[i].score + '</td>';
       html += '</tr>';
     }
@@ -1384,7 +1385,7 @@ function runGame() {
     olTitle.style.color = '#ff4466';
     olTitle.style.textShadow = '0 0 30px rgba(255,68,102,0.8)';
 
-    var nameVal = playerName ? ' value="' + playerName + '"' : '';
+    var nameVal = playerName ? ' value="' + esc(playerName) + '"' : '';
     olBody.innerHTML =
       (isNewHighScore ? '<div class="newHsBanner">\u26A1 NEW HIGH SCORE \u26A1</div>' : '') +
       '<div class="bigScore">' + score + '</div>' +
@@ -1445,7 +1446,7 @@ function runGame() {
           bar.innerHTML = '<div class="lbAllTime">' +
             '<span class="lbAtTrophy">\uD83C\uDFC6</span>' +
             '<span class="lbAtLabel">ALL-TIME BEST</span>' +
-            '<span class="lbAtName">' + top.name + '</span>' +
+            '<span class="lbAtName">' + esc(top.name) + '</span>' +
             '<span class="lbAtScore">' + top.score + '</span>' +
           '</div>';
         } else if (bar) {
@@ -1470,7 +1471,7 @@ function runGame() {
     }
 
     function doSubmit() {
-      var n = nameIn.value.trim().toUpperCase();
+      var n = nameIn.value.trim().toUpperCase().replace(/[<>"'&]/g, '');
       if (!n || submitted || score === 0) return;
       if (hasBannedWord(n)) {
         submitBtnEl.textContent = '\uD83D\uDE08';

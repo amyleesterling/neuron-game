@@ -5,15 +5,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>NEURON</title>
-<meta name="description" content="NEURON - like snake but a neuron">
+<meta name="description" content="NEURON - snake, but a neuron">
 <meta property="og:title" content="NEURON">
-<meta property="og:description" content="NEURON - like snake but a neuron">
+<meta property="og:description" content="NEURON - snake, but a neuron">
 <meta property="og:url" content="https://neuronsnake.com">
 <link rel="canonical" href="https://neuronsnake.com">
 <meta property="og:type" content="website">
+<meta property="og:image" content="https://neuronsnake.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="NEURON">
-<meta name="twitter:description" content="NEURON - like snake but a neuron">
+<meta name="twitter:description" content="NEURON - snake, but a neuron">
+<meta name="twitter:image" content="https://neuronsnake.com/og-image.png">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { width:100%; height:100%; background:#000; overflow:hidden; font-family:'Courier New',monospace; color:#a0d8f0; touch-action:none; -webkit-user-select:none; user-select:none; }
@@ -1136,7 +1140,7 @@ function runGame() {
   }
 
   function doShare(platform) {
-    var APP_URL = 'https://amyleesterling.github.io/neuron-game';
+    var APP_URL = 'https://neuronsnake.com';
     var shareText = 'I grew ' + score + ' synapses in NEURON \uD83E\uDDE0\u26A1 Play: ' + APP_URL;
     var encodedText = encodeURIComponent(shareText);
     var encodedUrl = encodeURIComponent(APP_URL);

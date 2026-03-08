@@ -31,13 +31,17 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 #overlay { position:fixed; inset:0; background:rgba(0,0,0,0.55); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; z-index:20; text-align:center; padding:32px; }
 #overlay h1 { font-size:52px; font-weight:900; letter-spacing:0.15em; color:#4fc3f7; text-shadow:0 0 30px rgba(79,195,247,0.9); }
 .info { font-size:11px; line-height:2.3; opacity:0.5; text-transform:uppercase; letter-spacing:0.08em; }
+.lobbyStats { display:flex; gap:20px; justify-content:center; margin-top:8px; }
+.lobbyStat { text-align:center; }
+.lobbyStat .lsNum { font-size:18px; font-weight:700; color:#ffe566; }
+.lobbyStat .lsLabel { font-size:7px; opacity:0.3; letter-spacing:0.12em; text-transform:uppercase; display:block; }
 .bigScore { font-size:58px; font-weight:900; color:#ffe566; text-shadow:0 0 28px rgba(255,229,102,0.9); }
 .scoreLbl { font-size:9px; opacity:0.4; letter-spacing:0.2em; text-transform:uppercase; margin-top:-12px; }
-.shareRow { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+.shareRow { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:10px; }
 #mainBtn { background:transparent; border:1px solid #4fc3f7; color:#4fc3f7; font-family:'Courier New',monospace; font-size:12px; letter-spacing:0.2em; padding:13px 36px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
 .shareBtn { background:transparent; border:1px solid #ff6b9d; color:#ff6b9d; font-family:'Courier New',monospace; font-size:11px; letter-spacing:0.2em; padding:12px 24px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
 #errBox { position:fixed; bottom:0; left:0; right:0; background:#ff0033; color:#fff; font-size:11px; padding:8px 12px; z-index:999; display:none; word-break:break-all; }
-.nameRow { display:flex; gap:8px; justify-content:center; align-items:center; margin-top:4px; }
+.nameRow { display:flex; gap:8px; justify-content:center; align-items:center; margin-top:8px; }
 .nameInput { background:transparent; border:1px solid #4fc3f7; color:#4fc3f7; font-family:'Courier New',monospace; font-size:13px; letter-spacing:0.1em; padding:10px 14px; width:140px; text-transform:uppercase; outline:none; border-radius:0; -webkit-appearance:none; }
 .nameInput::placeholder { color:rgba(79,195,247,0.35); }
 .submitBtn { background:transparent; border:1px solid #ffe566; color:#ffe566; font-family:'Courier New',monospace; font-size:11px; letter-spacing:0.15em; padding:10px 18px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
@@ -50,20 +54,27 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .lbTable .lbYou td { color:#ff6b9d; }
 .lbTable .lbYou { animation: lbHighlight 1.5s ease-out; }
 @keyframes lbHighlight { 0% { background:rgba(255,107,157,0.4); transform:scale(1.08); } 100% { background:transparent; transform:scale(1); } }
-.lbMedal { font-size:14px; margin-right:2px; }
+.lbMedal { display:inline-block; width:16px; height:16px; vertical-align:middle; margin-right:2px; }
 .submitPop { animation: submitPop 0.5s ease-out; }
 @keyframes submitPop { 0% { transform:scale(1); } 30% { transform:scale(1.4); } 50% { transform:scale(0.9); } 100% { transform:scale(1); } }
 .submitFlash { animation: submitFlash 0.8s ease-out; }
 @keyframes submitFlash { 0% { box-shadow:0 0 0px rgba(255,229,102,0); } 30% { box-shadow:0 0 30px rgba(255,229,102,0.8); } 100% { box-shadow:0 0 0px rgba(255,229,102,0); } }
-#lbArea { max-height:200px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:rgba(79,195,247,0.3) transparent; }
+#lbArea { max-height:200px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:rgba(79,195,247,0.3) transparent; margin-top:6px; margin-bottom:4px; }
 #lbArea::-webkit-scrollbar { width:4px; }
 #lbArea::-webkit-scrollbar-track { background:transparent; }
 #lbArea::-webkit-scrollbar-thumb { background:rgba(79,195,247,0.3); border-radius:2px; }
-.lbTitle { font-size:9px; opacity:0.4; letter-spacing:0.2em; text-transform:uppercase; margin-top:12px; }
-.lbTabs { display:flex; gap:4px; justify-content:center; margin-top:10px; }
+.lbTitle { font-size:9px; opacity:0.4; letter-spacing:0.2em; text-transform:uppercase; margin-top:6px; margin-bottom:2px; }
+.lbTabs { display:flex; gap:4px; justify-content:center; margin-top:14px; }
 .lbTab { background:transparent; border:1px solid rgba(79,195,247,0.25); color:rgba(160,216,240,0.4); font-family:'Courier New',monospace; font-size:9px; letter-spacing:0.15em; padding:6px 14px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
 .lbTabActive { border-color:#4fc3f7; color:#4fc3f7; }
 .lbTabLocked { opacity:0.3; cursor:not-allowed; }
+.lbMoreBtn { background:transparent; border:1px solid rgba(79,195,247,0.2); color:rgba(160,216,240,0.35); font-family:'Courier New',monospace; font-size:8px; letter-spacing:0.15em; padding:6px 20px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; margin-top:6px; display:block; width:100%; }
+.lbMoreBtn:hover { border-color:rgba(79,195,247,0.5); color:rgba(160,216,240,0.6); }
+.lbAllTime { display:flex; align-items:center; justify-content:center; gap:6px; margin-top:10px; margin-bottom:4px; padding:6px 10px; border:1px solid rgba(255,229,102,0.15); background:rgba(255,229,102,0.03); }
+.lbAllTime .lbAtTrophy { font-size:14px; }
+.lbAllTime .lbAtLabel { font-size:7px; opacity:0.4; letter-spacing:0.12em; text-transform:uppercase; color:#ffe566; }
+.lbAllTime .lbAtName { font-size:11px; color:#4fc3f7; letter-spacing:0.08em; text-transform:uppercase; }
+.lbAllTime .lbAtScore { font-size:11px; color:#ffe566; font-weight:700; }
 #adOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:50; display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; padding:24px; }
 #adOverlay.adShow { display:flex; }
 #adOverlay .adTitle { font-size:14px; letter-spacing:0.2em; text-transform:uppercase; color:#4fc3f7; }
@@ -74,6 +85,14 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 #adContainer { position:absolute; inset:0; }
 .adLifeBtn { background:transparent; border:1px solid #ffe566; color:#ffe566; font-family:'Courier New',monospace; font-size:11px; letter-spacing:0.15em; padding:12px 24px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; animation:adPulse 1.5s ease-in-out infinite; }
 @keyframes adPulse { 0%,100% { box-shadow:0 0 8px rgba(255,229,102,0.3); } 50% { box-shadow:0 0 20px rgba(255,229,102,0.6); } }
+.stripeLifeBtn { background:transparent; border:1px solid #4caf50; color:#4caf50; font-family:'Courier New',monospace; font-size:11px; letter-spacing:0.15em; padding:12px 24px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; animation:stripePulse 2s ease-in-out infinite; }
+@keyframes stripePulse { 0%,100% { box-shadow:0 0 8px rgba(76,175,80,0.3); } 50% { box-shadow:0 0 20px rgba(76,175,80,0.6); } }
+.stripeNote { font-size:7px; opacity:0.35; letter-spacing:0.1em; text-transform:uppercase; margin-top:-4px; color:#4caf50; }
+#stripeCountdown { position:fixed; inset:0; background:rgba(0,0,0,0.94); z-index:55; display:none; flex-direction:column; align-items:center; justify-content:center; gap:12px; text-align:center; font-family:'Courier New',monospace; color:#a0d8f0; }
+#stripeCountdown.show { display:flex; }
+.stripeCountNum { font-size:80px; font-weight:900; color:#ffe566; text-shadow:0 0 30px rgba(255,229,102,0.8); transition:transform 0.3s ease-out, opacity 0.3s ease-out; }
+.stripeCountPop { animation: countPop 0.6s ease-out; }
+@keyframes countPop { 0% { transform:scale(2); opacity:0.3; } 50% { transform:scale(1.3); } 100% { transform:scale(1); opacity:1; } }
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897605867387651" crossorigin="anonymous"></script>
 <script src="https://imasdk.googleapis.com/js/sdkloader/ima3.js"></script>
@@ -103,10 +122,19 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
   <div class="adSkip">Granting extra life when ad finishes...</div>
 </div>
 
+<div id="stripeCountdown">
+  <div style="font-size:14px;letter-spacing:0.2em;text-transform:uppercase;color:#4fc3f7;">PAYMENT RECEIVED</div>
+  <div data-lives-label style="font-size:12px;opacity:0.5;letter-spacing:0.15em;text-transform:uppercase;">+3 LIVES GRANTED</div>
+  <div style="font-size:9px;color:#4caf50;opacity:0.7;letter-spacing:0.12em;text-transform:uppercase;">&#x1F49A; 10% donated to neuroscience research</div>
+  <div class="stripeCountNum" id="stripeCountNum">3</div>
+  <div style="font-size:9px;opacity:0.3;letter-spacing:0.15em;text-transform:uppercase;">GET READY</div>
+</div>
+
 <div id="overlay">
   <h1 id="olTitle">NEURON</h1>
   <div id="olBody">
     <div class="info">Grow dendrites · reach synaptic targets<br>Don't cross existing branches<br><br>TAP where you want to turn</div>
+    <div class="lobbyStats" id="lobbyStats"></div>
   </div>
   <button id="mainBtn">FIRE SIGNAL</button>
 </div>
@@ -140,18 +168,35 @@ function runGame() {
   var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 900);
   var platform = isMobile ? 'mobile' : 'desktop';
 
-  function fetchLeaderboard(plat, callback) {
-    var query = sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(10);
+  var LB_PAGE_SIZE = 10;
+
+  function fetchLeaderboard(plat, callback, opts) {
+    opts = opts || {};
+    var lim = opts.limit || LB_PAGE_SIZE;
+    var hours = opts.hours || 0; // 0 = all time
+    var query = sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(lim);
     if (plat) query = query.eq('platform', plat);
+    if (hours > 0) {
+      var since = new Date(Date.now() - hours * 3600000).toISOString();
+      query = query.gte('created_at', since);
+    }
     query.then(function(res) {
-      if (res.error && plat) {
-        // Fallback: fetch without platform filter
-        sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(10)
-          .then(function(res2) { callback(res2.data || []); });
+      if (res.error) {
+        // Fallback: if created_at filter failed or platform filter failed, try without
+        var fb = sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(lim);
+        fb.then(function(res2) { callback(res2.data || []); });
       } else {
         callback(res.data || []);
       }
     }).catch(function() { callback([]); });
+  }
+
+  function fetchAllTimeTop(plat, callback) {
+    var query = sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(1);
+    if (plat) query = query.eq('platform', plat);
+    query.then(function(res) {
+      callback(res.data && res.data[0] ? res.data[0] : null);
+    }).catch(function() { callback(null); });
   }
 
   function submitScore(name, sc, callback) {
@@ -160,23 +205,38 @@ function runGame() {
     sb.from('neuron_snake_leaderboard').insert({name: name, score: sc, platform: platform})
       .then(function(res) {
         if (res.error) {
-          // Fallback: try without platform column
           return sb.from('neuron_snake_leaderboard').insert({name: name, score: sc});
         }
       })
-      .then(function() { fetchLeaderboard(platform, callback); })
-      .catch(function() { fetchLeaderboard(null, callback); });
+      .then(function() { callback(); })
+      .catch(function() { callback(); });
   }
 
-  function buildLeaderboardHTML(rows, myScore, label) {
+  function buildLeaderboardHTML(rows, myScore, label, opts) {
+    opts = opts || {};
     var title = label || (platform === 'mobile' ? '\uD83D\uDCF1 Mobile' : '\uD83D\uDDA5\uFE0F Desktop');
-    if (!rows || rows.length === 0) return '<div class="lbTitle">' + title + ' Leaderboard</div><div class="info">No scores yet</div>';
+    var timeLabel = opts.hours ? ' \u2014 Last 24h' : ' \u2014 All Time';
+    if (!rows || rows.length === 0) return '<div class="lbTitle">' + title + timeLabel + '</div><div class="info">No scores yet</div>';
+    // Inline SVG neuron icons — soma with branching dendrites
+    function neuronSVG(color) {
+      return '<span class="lbMedal"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">' +
+        '<g fill="none" stroke="' + color + '" stroke-width="1.5" stroke-linecap="round">' +
+        '<ellipse cx="16" cy="16" rx="4" ry="4.5" fill="' + color + '" fill-opacity="0.25"/>' +
+        '<path d="M16 11.5 L14 7 L12.5 4"/><path d="M16 11.5 L18 6.5 L19.5 4"/>' +
+        '<path d="M14 7 L11.5 6"/><path d="M18 6.5 L20.5 5.5"/>' +
+        '<path d="M12 15 L7.5 13 L5 11.5"/><path d="M12 17 L8 18.5 L5.5 20"/>' +
+        '<path d="M7.5 13 L6 15"/>' +
+        '<path d="M20 15 L24 13.5 L27 12"/><path d="M20 17 L24.5 18 L27 19.5"/>' +
+        '<path d="M24 13.5 L25.5 15.5"/>' +
+        '<path d="M16 20.5 L16 26 L15 29" stroke-dasharray="2 1.5"/>' +
+        '</g></svg></span>';
+    }
     var medals = [
-      '<span class="lbMedal" style="color:#ffd700">🧠</span>',  // gold neuron
-      '<span class="lbMedal" style="color:#c0c0c0">🧠</span>',  // silver neuron
-      '<span class="lbMedal" style="color:#cd7f32">🧠</span>'   // bronze neuron
+      neuronSVG('#ffd700'),  // gold
+      neuronSVG('#c0c0c0'),  // silver
+      neuronSVG('#cd7f32')   // bronze
     ];
-    var html = '<div class="lbTitle">' + title + ' Leaderboard</div><table class="lbTable"><tr><th>Rank</th><th>Name</th><th>Score</th></tr>';
+    var html = '<div class="lbTitle">' + title + timeLabel + '</div><table class="lbTable"><tr><th>Rank</th><th>Name</th><th>Score</th></tr>';
     for (var i = 0; i < rows.length; i++) {
       var isYou = (rows[i].name === playerName && rows[i].score === myScore);
       var medal = i < 3 ? medals[i] : '';
@@ -188,6 +248,10 @@ function runGame() {
       html += '</tr>';
     }
     html += '</table>';
+    // Show "More" button if we got a full page of results
+    if (rows.length >= (opts.currentLimit || LB_PAGE_SIZE) && !opts.expanded) {
+      html += '<button class="lbMoreBtn" id="lbMoreBtn">\u25BC MORE SCORES</button>';
+    }
     return html;
   }
 
@@ -375,6 +439,14 @@ function runGame() {
   var isDemo = true;
   var demoAccum = 0;
   var adLifeUsed = false;
+  var stripeLivesUsed = false;
+  // Stripe Payment Links — replace with your links from Stripe Dashboard
+  // Tier 1: "NEURON - 3 Extra Lives" at $0.99 → redirect to https://neuronsnake.com?stripe=success
+  // Tier 2: "NEURON - 20 Extra Lives" at $4.99 → redirect to https://neuronsnake.com?stripe=success
+  var STRIPE_LINK_T1 = 'https://buy.stripe.com/REPLACE_WITH_T1_LINK';
+  var STRIPE_LINK_T2 = 'https://buy.stripe.com/REPLACE_WITH_T2_LINK';
+  var stripeHasPurchasedBefore = !!localStorage.getItem('neuron_stripe_bought');
+  var stripeTier = stripeHasPurchasedBefore ? 2 : 1;
 
   function cellKey(x, y) { return x + '_' + y; }
   function worldX(gx) { return gx * CELL + CELL / 2; }
@@ -397,6 +469,7 @@ function runGame() {
     particles = []; frozenBranches = []; frozenDots = [];
     particlesActive = false;
     adLifeUsed = false;
+    stripeLivesUsed = false;
 
     somaGX = Math.floor(COLS / 2);
     somaGY = Math.floor(ROWS / 2);
@@ -746,16 +819,16 @@ function runGame() {
     }
     // Demo mode — restart silently
     if (isDemo) { demoInit(); return; }
-    // Offer ad life if score >= 6 and not yet used
-    if (score >= 6 && !adLifeUsed) {
-      b.growing = false;
-      isHurt = true;
-      hurtTimer = 0;
-      hasPend = false;
-      refreshHUD();
-      showAdLifeOffer();
-      return;
-    }
+    // Stripe purchase offer — disabled until payment links are configured
+    // if (score >= 4 && !stripeLivesUsed) {
+    //   b.growing = false;
+    //   isHurt = true;
+    //   hurtTimer = 0;
+    //   hasPend = false;
+    //   refreshHUD();
+    //   showAdLifeOffer();
+    //   return;
+    // }
     // All lives gone — full apoptosis immediately
     doFullDeath();
   }
@@ -771,27 +844,42 @@ function runGame() {
   }
 
   function showAdLifeOffer() {
-    // Pause game and show offer button on the overlay
+    // Pause game and show offer buttons on the overlay
     olTitle.textContent = 'NEURON';
     olTitle.style.color = '#4fc3f7';
     olTitle.style.textShadow = '0 0 30px rgba(79,195,247,0.9)';
+
+    var btns = '';
+    if (!stripeLivesUsed) {
+      if (stripeTier === 2) {
+        btns += '<button class="stripeLifeBtn" id="buyLivesBtn">\uD83D\uDC9A BUY 20 LIVES \u2014 $4.99</button>' +
+          '<div class="stripeNote">10% of proceeds go to neuroscience research</div>';
+      } else {
+        btns += '<button class="stripeLifeBtn" id="buyLivesBtn">\uD83D\uDC9A BUY 3 LIVES \u2014 $0.99</button>' +
+          '<div class="stripeNote">10% of proceeds go to neuroscience research</div>';
+      }
+    }
+
     olBody.innerHTML =
-      '<div style="font-size:42px;margin-bottom:4px;">💀</div>' +
+      '<div style="font-size:42px;margin-bottom:4px;">\uD83D\uDC80</div>' +
       '<div style="font-size:11px;opacity:0.5;letter-spacing:0.15em;text-transform:uppercase;">Out of lives</div>' +
-      '<div style="margin-top:16px;">' +
-        '<button class="adLifeBtn" id="watchAdBtn">▶ WATCH AD FOR +1 LIFE</button>' +
+      '<div style="margin-top:16px;display:flex;flex-direction:column;gap:10px;align-items:center;">' +
+        btns +
       '</div>' +
       '<div style="font-size:8px;opacity:0.25;margin-top:12px;letter-spacing:0.1em;text-transform:uppercase;">One-time per game</div>';
     mainBtn.textContent = 'NO THANKS';
     mainBtn.style.borderColor = 'rgba(79,195,247,0.3)';
     mainBtn.style.color = 'rgba(79,195,247,0.4)';
+    mainBtn.setAttribute('data-action', 'decline-offer');
     overlay.style.display = 'flex';
 
-    var watchBtn = document.getElementById('watchAdBtn');
-    watchBtn.addEventListener('click', function() {
-      overlay.style.display = 'none';
-      startAdCountdown();
-    });
+    var buyBtn = document.getElementById('buyLivesBtn');
+    if (buyBtn) {
+      buyBtn.addEventListener('click', function() {
+        overlay.style.display = 'none';
+        startStripePurchase();
+      });
+    }
   }
 
   function startAdCountdown() {
@@ -883,6 +971,155 @@ function runGame() {
     refreshHUD();
   }
 
+  function saveGameStateForStripe() {
+    var state = {
+      score: score,
+      branches: branches,
+      occupied: occupied,
+      dots: dots,
+      axonPts: axonPts,
+      somaGX: somaGX,
+      somaGY: somaGY,
+      origins: origins,
+      adLifeUsed: adLifeUsed,
+      gameSpd: gameSpd,
+      activeIdx: activeIdx,
+      CW: CW,
+      CH: CH,
+      tier: stripeTier
+    };
+    localStorage.setItem('neuron_stripe_state', JSON.stringify(state));
+  }
+
+  function startStripePurchase() {
+    saveGameStateForStripe();
+    window.location.href = (stripeTier === 2) ? STRIPE_LINK_T2 : STRIPE_LINK_T1;
+  }
+
+  function checkStripeReturn() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('stripe') !== 'success') return false;
+
+    // Clean URL
+    window.history.replaceState({}, '', window.location.pathname);
+
+    // Mark that user has purchased — next time they'll see the $4.99 tier
+    localStorage.setItem('neuron_stripe_bought', '1');
+    stripeHasPurchasedBefore = true;
+
+    var stateStr = localStorage.getItem('neuron_stripe_state');
+    var purchasedTier = 1;
+    var grantedLives = 3;
+
+    if (stateStr) {
+      try {
+        var parsed = JSON.parse(stateStr);
+        purchasedTier = parsed.tier || 1;
+      } catch(e) {}
+    }
+    grantedLives = (purchasedTier === 2) ? 20 : 3;
+
+    if (!stateStr) {
+      // No saved state — start fresh with purchased lives
+      initGame();
+      lives = grantedLives;
+      stripeLivesUsed = true;
+      gState = 'countdown';
+      isDemo = false;
+      refreshHUD();
+      showStripeCountdown(grantedLives, purchasedTier);
+      return true;
+    }
+
+    try {
+      var state = JSON.parse(stateStr);
+      localStorage.removeItem('neuron_stripe_state');
+
+      // Check if screen dimensions match closely enough
+      if (Math.abs(state.CW - CW) > 80 || Math.abs(state.CH - CH) > 80) {
+        // Screen changed — start fresh with bonus lives
+        initGame();
+        lives = grantedLives;
+        stripeLivesUsed = true;
+        gState = 'countdown';
+        isDemo = false;
+        refreshHUD();
+        showStripeCountdown(grantedLives, purchasedTier);
+        return true;
+      }
+
+      // Restore game state
+      score = state.score;
+      branches = state.branches;
+      occupied = state.occupied;
+      dots = state.dots;
+      axonPts = state.axonPts;
+      somaGX = state.somaGX;
+      somaGY = state.somaGY;
+      origins = state.origins;
+      adLifeUsed = state.adLifeUsed;
+      gameSpd = state.gameSpd;
+      activeIdx = state.activeIdx;
+      stripeLivesUsed = true;
+
+      // Grant purchased lives
+      lives = grantedLives;
+      isDead = false;
+      isHurt = false;
+      gState = 'countdown';
+      isDemo = false;
+      particles = [];
+      frozenBranches = [];
+      frozenDots = [];
+      particlesActive = false;
+      accum = 0;
+      lastTS = 0;
+
+      refreshHUD();
+      showStripeCountdown(grantedLives, purchasedTier);
+      return true;
+    } catch(e) {
+      localStorage.removeItem('neuron_stripe_state');
+      return false;
+    }
+  }
+
+  function showStripeCountdown(grantedLives, tier) {
+    var cdEl = document.getElementById('stripeCountdown');
+    var numEl = document.getElementById('stripeCountNum');
+    // Update overlay text to match purchased tier
+    var livesLabel = cdEl.querySelector('[data-lives-label]');
+    if (livesLabel) livesLabel.textContent = '+' + grantedLives + ' LIVES GRANTED';
+    cdEl.className = 'show';
+    var count = 3;
+    numEl.textContent = count;
+    numEl.className = 'stripeCountNum stripeCountPop';
+
+    var cdInterval = setInterval(function() {
+      count--;
+      if (count > 0) {
+        numEl.textContent = count;
+        // Re-trigger pop animation
+        numEl.className = 'stripeCountNum';
+        void numEl.offsetWidth; // force reflow
+        numEl.className = 'stripeCountNum stripeCountPop';
+      } else {
+        clearInterval(cdInterval);
+        cdEl.className = '';
+        cdEl.style.display = 'none';
+        // Resume game
+        gState = 'playing';
+        accum = 0;
+        lastTS = 0;
+        // Spawn new branch
+        spawnBranch();
+        activeIdx = branches.length - 1;
+        branches[activeIdx].growing = true;
+        refreshHUD();
+      }
+    }, 1000);
+  }
+
   function buildParticles() {
     particles = [];
     var bi, pi, ci, ang, spd2, bp;
@@ -932,6 +1169,9 @@ function runGame() {
 
   function showResults() {
     particlesActive = false;
+    // Track cumulative synapses
+    var cs = parseInt(localStorage.getItem('neuron_total_synapses') || '0', 10) + score;
+    localStorage.setItem('neuron_total_synapses', cs);
     olTitle.textContent = 'APOPTOSIS';
     olTitle.style.color = '#ff4466';
     olTitle.style.textShadow = '0 0 30px rgba(255,68,102,0.8)';
@@ -947,7 +1187,9 @@ function runGame() {
       '<div class="lbTabs">' +
         '<button class="lbTab' + (isMobile ? ' lbTabActive' : '') + ' lbTabLocked" id="tabMobile" disabled>\uD83D\uDCF1 MOBILE</button>' +
         '<button class="lbTab' + (!isMobile ? ' lbTabActive' : '') + ' lbTabLocked" id="tabDesktop" disabled>\uD83D\uDDA5\uFE0F DESKTOP</button>' +
+        '<button class="lbTab lbTabLocked" id="tabTime" disabled style="margin-left:4px;">&#x23F0; 24H</button>' +
       '</div>' +
+      '<div id="lbAllTimeBar"></div>' +
       '<div id="lbArea"><div class="lbTitle">Loading leaderboard...</div></div>' +
       '<div class="shareRow">' +
         '<button class="shareBtn" id="btnX">SHARE ON X</button>' +
@@ -965,17 +1207,56 @@ function runGame() {
     var lbArea = document.getElementById('lbArea');
 
     var viewPlat = platform; // which leaderboard tab is active
+    var viewHours = 24; // default to 24h
 
-    function showLb(plat, sc) {
+    function showLb(plat, sc, hours) {
       viewPlat = plat;
+      if (typeof hours !== 'undefined') viewHours = hours;
       var tm = document.getElementById('tabMobile');
       var td = document.getElementById('tabDesktop');
+      var tt = document.getElementById('tabTime');
       if (tm) { tm.className = 'lbTab' + (plat === 'mobile' ? ' lbTabActive' : ''); }
       if (td) { td.className = 'lbTab' + (plat === 'desktop' ? ' lbTabActive' : ''); }
+      if (tt) {
+        tt.textContent = viewHours ? '\u23F0 24H' : '\u2605 ALL TIME';
+        tt.className = 'lbTab lbTabActive';
+        tt.style.borderColor = viewHours ? '' : '#ffe566';
+        tt.style.color = viewHours ? '' : '#ffe566';
+      }
       fetchLeaderboard(plat, function(rows) {
         var label = plat === 'mobile' ? '\uD83D\uDCF1 Mobile' : '\uD83D\uDDA5\uFE0F Desktop';
-        lbArea.innerHTML = buildLeaderboardHTML(rows, sc, label);
+        lbArea.innerHTML = buildLeaderboardHTML(rows, sc, label, {hours: viewHours, currentLimit: LB_PAGE_SIZE});
+        attachMoreBtn(plat, sc, label, LB_PAGE_SIZE);
+      }, {hours: viewHours});
+      // Fetch all-time #1 for trophy bar
+      fetchAllTimeTop(plat, function(top) {
+        var bar = document.getElementById('lbAllTimeBar');
+        if (bar && top) {
+          bar.innerHTML = '<div class="lbAllTime">' +
+            '<span class="lbAtTrophy">\uD83C\uDFC6</span>' +
+            '<span class="lbAtLabel">ALL-TIME BEST</span>' +
+            '<span class="lbAtName">' + top.name + '</span>' +
+            '<span class="lbAtScore">' + top.score + '</span>' +
+          '</div>';
+        } else if (bar) {
+          bar.innerHTML = '';
+        }
       });
+    }
+
+    function attachMoreBtn(plat, sc, label, currentLimit) {
+      var moreBtn = document.getElementById('lbMoreBtn');
+      if (moreBtn) {
+        moreBtn.addEventListener('click', function() {
+          moreBtn.textContent = 'LOADING...';
+          moreBtn.disabled = true;
+          fetchLeaderboard(plat, function(rows) {
+            lbArea.innerHTML = buildLeaderboardHTML(rows, sc, label, {hours: viewHours, currentLimit: 200, expanded: true});
+            var youRow = document.getElementById('lbYouRow');
+            if (youRow) youRow.scrollIntoView({behavior: 'smooth', block: 'center'});
+          }, {hours: viewHours, limit: 200});
+        });
+      }
     }
 
     function doSubmit() {
@@ -984,7 +1265,7 @@ function runGame() {
       submitted = true;
       submitBtnEl.textContent = '...';
       submitBtnEl.className = 'submitBtn submitFlash';
-      submitScore(n, score, function(rows) {
+      submitScore(n, score, function() {
         // Pop animation on checkmark
         submitBtnEl.textContent = '\u2713';
         submitBtnEl.style.borderColor = '#4fc3f7';
@@ -992,15 +1273,13 @@ function runGame() {
         submitBtnEl.className = 'submitBtn submitPop';
         // Brief delay then reveal leaderboard with highlight
         setTimeout(function() {
-          var label = platform === 'mobile' ? '\uD83D\uDCF1 Mobile' : '\uD83D\uDDA5\uFE0F Desktop';
-          lbArea.innerHTML = buildLeaderboardHTML(rows, score, label);
-          // Scroll to and highlight the player's row
-          var youRow = document.getElementById('lbYouRow');
-          if (youRow) {
-            youRow.scrollIntoView({behavior: 'smooth', block: 'center'});
-          }
-          // Unlock tabs after submitting
           unlockTabs();
+          showLb(platform, score, 24);
+          // Scroll to player's row after render
+          setTimeout(function() {
+            var youRow = document.getElementById('lbYouRow');
+            if (youRow) youRow.scrollIntoView({behavior: 'smooth', block: 'center'});
+          }, 200);
         }, 400);
       });
     }
@@ -1008,8 +1287,10 @@ function runGame() {
     function unlockTabs() {
       var tm = document.getElementById('tabMobile');
       var td = document.getElementById('tabDesktop');
+      var tt = document.getElementById('tabTime');
       if (tm) { tm.disabled = false; tm.classList.remove('lbTabLocked'); }
       if (td) { td.disabled = false; td.classList.remove('lbTabLocked'); }
+      if (tt) { tt.disabled = false; tt.classList.remove('lbTabLocked'); }
     }
 
     submitBtnEl.addEventListener('click', doSubmit);
@@ -1028,15 +1309,25 @@ function runGame() {
     // Tab switching (only works after submit unlocks them)
     var tmBtn = document.getElementById('tabMobile');
     var tdBtn = document.getElementById('tabDesktop');
+    var ttBtn = document.getElementById('tabTime');
     if (tmBtn) tmBtn.addEventListener('click', function() { if (!this.disabled) showLb('mobile', submitted ? score : -1); });
     if (tdBtn) tdBtn.addEventListener('click', function() { if (!this.disabled) showLb('desktop', submitted ? score : -1); });
+    if (ttBtn) ttBtn.addEventListener('click', function() {
+      if (this.disabled) return;
+      // Toggle between 24h and all-time
+      var newHours = viewHours ? 0 : 24;
+      showLb(viewPlat, submitted ? score : -1, newHours);
+    });
+
+    // Focus name input so user can type immediately
+    setTimeout(function() { nameIn.focus(); }, 100);
 
     // If name already saved, auto-submit
     if (playerName) {
       doSubmit();
     } else {
-      // Just show existing leaderboard for current platform
-      showLb(platform, -1);
+      // Just show existing leaderboard for current platform (24h default)
+      showLb(platform, -1, 24);
     }
 
     var bx = document.getElementById('btnX');
@@ -1177,17 +1468,38 @@ function runGame() {
     });
   }
 
+  function updateLobbyStats() {
+    var el = document.getElementById('lobbyStats');
+    if (!el) return;
+    var gp = parseInt(localStorage.getItem('neuron_games_played') || '0', 10);
+    if (gp === 0) { el.innerHTML = ''; return; }
+    el.innerHTML =
+      '<div class="lobbyStat"><span class="lsNum">' + gp.toLocaleString() + '</span><span class="lsLabel">neurons played</span></div>';
+  }
+  updateLobbyStats();
+
   // Main button
   mainBtn.addEventListener('click', function() {
     try {
+      // "NO THANKS" on ad/stripe offer → go to death/leaderboard screen
+      if (mainBtn.getAttribute('data-action') === 'decline-offer') {
+        mainBtn.removeAttribute('data-action');
+        overlay.style.display = 'none';
+        doFullDeath();
+        return;
+      }
       overlay.style.display = 'none';
       olTitle.textContent = 'NEURON';
       olTitle.style.color = '';
       olTitle.style.textShadow = '';
-      olBody.innerHTML = '<div class="info">Grow dendrites · reach synaptic targets<br>Don\'t cross existing branches<br><br>TAP where you want to turn</div>';
+      olBody.innerHTML = '<div class="info">Grow dendrites · reach synaptic targets<br>Don\'t cross existing branches<br><br>TAP where you want to turn</div>' +
+        '<div class="lobbyStats" id="lobbyStats"></div>';
+      updateLobbyStats();
       mainBtn.textContent = 'FIRE SIGNAL';
       isDemo = false;
       gState = 'playing';
+      var gc = parseInt(localStorage.getItem('neuron_games_played') || '0', 10) + 1;
+      localStorage.setItem('neuron_games_played', gc);
       initGame();
     } catch(e) {
       var box = document.getElementById('errBox');
@@ -1195,10 +1507,12 @@ function runGame() {
     }
   });
 
-  // Enter key starts/restarts game (but not when typing in an input)
+  // Enter key starts/restarts game (but not when typing in an input or on results screen)
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Enter' && overlay.style.display !== 'none') {
       if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+      // Don't auto-restart if the name input is visible (results screen)
+      if (document.getElementById('nameIn')) return;
       e.preventDefault();
       mainBtn.click();
     }
@@ -1394,9 +1708,13 @@ function runGame() {
     for (i = 0; i < branches.length; i++) if (branches[i].path.length > 2) c++;
     valBranch.textContent = c;
     var hearts = '';
-    var i;
-    for (i = 0; i < lives; i++) hearts += '\u2764\uFE0F';
-    for (i = lives; i < 2; i++) hearts += '\uD83D\uDC94';
+    if (lives > 5) {
+      hearts = '\u2764\uFE0F\u00D7' + lives;
+    } else {
+      var maxH = Math.max(lives, 2);
+      for (i = 0; i < lives; i++) hearts += '\u2764\uFE0F';
+      for (i = lives; i < maxH; i++) hearts += '\uD83D\uDC94';
+    }
     valLives.textContent = hearts;
   }
 
@@ -1429,7 +1747,10 @@ function runGame() {
     requestAnimationFrame(loop);
   }
 
-  demoInit();
+  // Check if returning from Stripe payment
+  if (!checkStripeReturn()) {
+    demoInit();
+  }
   requestAnimationFrame(loop);
 }
 </script>

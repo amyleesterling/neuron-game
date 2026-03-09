@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRAIN GALLERY — NEURON</title>
+<meta name="description" content="Brain Gallery — Neurons that scored 5+">
+<style>
+html, body { width:100%; min-height:100%; background:#000; color:#c0daf0; font-family:'Courier New',monospace; margin:0; padding:0; }
+a { color:#4fc3f7; text-decoration:none; }
+a:hover { color:#80d8ff; }
+
+.header { text-align:center; padding:40px 20px 20px; }
+.header h1 { font-size:36px; font-weight:900; letter-spacing:0.15em; color:#4fc3f7; text-shadow:0 0 30px rgba(79,195,247,0.7); margin:0; }
+.header .sub { font-size:11px; opacity:0.45; letter-spacing:0.18em; text-transform:uppercase; margin-top:6px; }
+.header .backLink { font-size:10px; letter-spacing:0.15em; text-transform:uppercase; margin-top:14px; display:inline-block; border:1px solid rgba(79,195,247,0.3); padding:6px 18px; }
+.header .backLink:hover { border-color:#4fc3f7; }
+
+.controls { text-align:center; margin:16px 0 24px; }
+.sortBtn { background:transparent; border:1px solid rgba(79,195,247,0.25); color:rgba(160,216,240,0.4); font-family:'Courier New',monospace; font-size:9px; letter-spacing:0.15em; padding:6px 14px; cursor:pointer; text-transform:uppercase; border-radius:0; margin:0 3px; }
+.sortBtn.active { border-color:#4fc3f7; color:#4fc3f7; }
+
+.grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:16px; padding:0 24px 60px; max-width:1200px; margin:0 auto; }
+
+.card { background:rgba(79,195,247,0.03); border:1px solid rgba(79,195,247,0.1); padding:10px; text-align:center; transition:border-color 0.3s; }
+.card:hover { border-color:rgba(79,195,247,0.35); }
+.card canvas { display:block; width:100%; aspect-ratio:1; background:#000; }
+.card .cardName { font-size:10px; color:#4fc3f7; letter-spacing:0.12em; text-transform:uppercase; margin-top:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.card .cardScore { font-size:14px; font-weight:700; color:#ffe566; margin-top:2px; }
+.card .cardDate { font-size:8px; opacity:0.25; letter-spacing:0.1em; text-transform:uppercase; margin-top:4px; }
+
+.loadMore { display:block; margin:0 auto 60px; background:transparent; border:1px solid rgba(79,195,247,0.2); color:rgba(160,216,240,0.35); font-family:'Courier New',monospace; font-size:9px; letter-spacing:0.15em; padding:10px 30px; cursor:pointer; text-transform:uppercase; }
+.loadMore:hover { border-color:rgba(79,195,247,0.5); color:rgba(160,216,240,0.6); }
+
+.empty { text-align:center; opacity:0.3; font-size:12px; letter-spacing:0.15em; text-transform:uppercase; margin-top:60px; }
+
+#snakeBadge { display:inline-block; margin-top:12px; padding:5px 16px; border:1px solid rgba(76,175,80,0.45); background:rgba(76,175,80,0.08); font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:#4caf50; text-decoration:none; transition:border-color 0.3s, background 0.3s, color 0.3s; }
+#snakeBadge:hover { border-color:#4caf50; background:rgba(76,175,80,0.18); color:#66bb6a; }
+#snakeBadge .snakeTicker { color:#ffe566; font-weight:700; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>BRAIN GALLERY</h1>
+  <div class="sub">neurons that scored 5+</div>
+  <br>
+  <a class="backLink" href="/">&#8592; PLAY NEURON</a>
+  <br>
+  <a id="snakeBadge" href="https://pump.fun/coin/8e5kbfG3uFDwLEL6WCeJ9P53DDjh2W4Ls4H1EEMBpump" target="_blank" rel="noopener">powered by <span class="snakeTicker">$SNAKE</span></a>
+</div>
+
+<div class="controls">
+  <button class="sortBtn active" id="sortRecent">RECENT</button>
+  <button class="sortBtn" id="sortTop">TOP SCORE</button>
+</div>
+
+<div class="grid" id="gallery"></div>
+<button class="loadMore" id="loadMore" style="display:none;">LOAD MORE</button>
+<div class="empty" id="emptyMsg" style="display:none;">No neurons yet. Score 5+ to appear here!</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function() {
+  var SUPABASE_URL = 'https://javthknksdcrlhiaaptj.supabase.co';
+  var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphdnRoa25rc2RjcmxoaWFhcHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2MzUyOTIsImV4cCI6MjA4ODIxMTI5Mn0.APdwuQ-uudyHISBr7Dj6HTylO7qavJ0HhB32E5X434g';
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  var PAGE_SIZE = 30;
+  var offset = 0;
+  var sortBy = 'recent'; // 'recent' or 'top'
+  var gallery = document.getElementById('gallery');
+  var loadMoreBtn = document.getElementById('loadMore');
+  var emptyMsg = document.getElementById('emptyMsg');
+
+  function renderNeuron(canvas, data) {
+    var ctx = canvas.getContext('2d');
+    var size = 180;
+    canvas.width = size;
+    canvas.height = size;
+
+    var cols = data.cols || 48;
+    var rows = data.rows || 48;
+    var scale = size / Math.max(cols, rows);
+
+    function gx(x) { return x * scale + scale / 2; }
+    function gy(y) { return y * scale + scale / 2; }
+
+    // Background
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, size, size);
+
+    // Axon — pink dashed
+    var axon = data.axon_pts;
+    if (axon && axon.length > 0) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,107,157,0.55)';
+      ctx.lineWidth = 1.5;
+      ctx.lineCap = 'round';
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(gx(data.soma_x), gy(data.soma_y));
+      for (var ai = 0; ai < axon.length; ai++) ctx.lineTo(gx(axon[ai].x), gy(axon[ai].y));
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Terminal dot
+      var at = axon[axon.length - 1];
+      ctx.beginPath(); ctx.arc(gx(at.x), gy(at.y), 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,107,157,0.7)'; ctx.fill();
+      ctx.restore();
+    }
+
+    // Branches — cyan lines
+    var branches = data.branches;
+    if (branches) {
+      for (var bi = 0; bi < branches.length; bi++) {
+        var b = branches[bi];
+        if (!b.path || b.path.length < 2) continue;
+        ctx.save();
+        ctx.strokeStyle = bi === 0 ? 'rgba(79,195,247,0.9)' : 'rgba(30,120,200,0.55)';
+        ctx.lineWidth = bi === 0 ? 1.8 : 1.2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.shadowColor = bi === 0 ? 'rgba(79,195,247,0.5)' : 'rgba(30,120,200,0.2)';
+        ctx.shadowBlur = bi === 0 ? 6 : 2;
+        ctx.beginPath();
+        ctx.moveTo(gx(data.soma_x), gy(data.soma_y));
+        for (var pi = 0; pi < b.path.length; pi++) ctx.lineTo(gx(b.path[pi].x), gy(b.path[pi].y));
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // Soma — pyramidal shape
+    var smx = gx(data.soma_x), smy = gy(data.soma_y);
+    var r = scale * 2.8;
+    // Glow
+    var sg = ctx.createRadialGradient(smx, smy, 0, smx, smy, r * 1.8);
+    sg.addColorStop(0, 'rgba(79,195,247,0.15)');
+    sg.addColorStop(1, 'rgba(79,195,247,0)');
+    ctx.beginPath(); ctx.arc(smx, smy, r * 1.8, 0, Math.PI * 2); ctx.fillStyle = sg; ctx.fill();
+    // Body
+    ctx.save(); ctx.translate(smx, smy);
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.8);
+    ctx.bezierCurveTo(r * 0.25, -r * 0.35, r * 0.7, r * 0.2, r * 0.7, r * 0.6);
+    ctx.bezierCurveTo(r * 0.4, r * 0.72, -r * 0.4, r * 0.72, -r * 0.7, r * 0.6);
+    ctx.bezierCurveTo(-r * 0.7, r * 0.2, -r * 0.25, -r * 0.35, 0, -r * 0.8);
+    ctx.closePath();
+    var fg = ctx.createRadialGradient(0, -r * 0.05, 0, 0, r * 0.2, r * 0.9);
+    fg.addColorStop(0, 'rgba(140,220,255,1)');
+    fg.addColorStop(0.4, 'rgba(40,130,220,1)');
+    fg.addColorStop(1, 'rgba(4,20,70,1)');
+    ctx.fillStyle = fg; ctx.fill();
+    ctx.strokeStyle = 'rgba(160,220,255,0.8)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.restore();
+  }
+
+  function formatDate(iso) {
+    var d = new Date(iso);
+    var months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+  }
+
+  function createCard(entry) {
+    var card = document.createElement('div');
+    card.className = 'card';
+    var c = document.createElement('canvas');
+    card.appendChild(c);
+    var name = document.createElement('div');
+    name.className = 'cardName';
+    name.textContent = entry.name || 'ANONYMOUS';
+    card.appendChild(name);
+    var sc = document.createElement('div');
+    sc.className = 'cardScore';
+    sc.textContent = entry.score;
+    card.appendChild(sc);
+    var dt = document.createElement('div');
+    dt.className = 'cardDate';
+    dt.textContent = formatDate(entry.created_at);
+    card.appendChild(dt);
+    renderNeuron(c, entry);
+    return card;
+  }
+
+  function loadEntries(append) {
+    if (!append) {
+      offset = 0;
+      gallery.innerHTML = '';
+    }
+    var query = sb.from('neuron_gallery').select('*');
+    if (sortBy === 'top') {
+      query = query.order('score', { ascending: false }).order('created_at', { ascending: false });
+    } else {
+      query = query.order('created_at', { ascending: false });
+    }
+    query = query.range(offset, offset + PAGE_SIZE - 1);
+    query.then(function(res) {
+      var rows = res.data || [];
+      if (rows.length === 0 && offset === 0) {
+        emptyMsg.style.display = '';
+        loadMoreBtn.style.display = 'none';
+        return;
+      }
+      emptyMsg.style.display = 'none';
+      for (var i = 0; i < rows.length; i++) {
+        gallery.appendChild(createCard(rows[i]));
+      }
+      offset += rows.length;
+      loadMoreBtn.style.display = rows.length >= PAGE_SIZE ? '' : 'none';
+    });
+  }
+
+  // Sort buttons
+  document.getElementById('sortRecent').addEventListener('click', function() {
+    sortBy = 'recent';
+    this.classList.add('active');
+    document.getElementById('sortTop').classList.remove('active');
+    loadEntries(false);
+  });
+  document.getElementById('sortTop').addEventListener('click', function() {
+    sortBy = 'top';
+    this.classList.add('active');
+    document.getElementById('sortRecent').classList.remove('active');
+    loadEntries(false);
+  });
+
+  loadMoreBtn.addEventListener('click', function() { loadEntries(true); });
+
+  // Initial load
+  loadEntries(false);
+})();
+</script>
+</body>
+</html>

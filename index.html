@@ -38,7 +38,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 #snakeCanvas { position:fixed; inset:0; pointer-events:none; z-index:21; }
 .lobbyStat { display:inline-block; }
 .lobbyStat .lsNum { font-size:22px; font-weight:700; color:#ffe566; margin-right:4px; }
-.lobbyStat .lsLabel { font-size:11px; opacity:0.35; letter-spacing:0.1em; text-transform:uppercase; }
+.lobbyStat .lsLabel { font-size:12px; opacity:0.55; letter-spacing:0.1em; text-transform:uppercase; }
 .bigScore { font-size:58px; font-weight:900; color:#ffe566; text-shadow:0 0 28px rgba(255,229,102,0.9); }
 .scoreLbl { font-size:9px; opacity:0.4; letter-spacing:0.2em; text-transform:uppercase; margin-top:-12px; }
 .shareRow { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:10px; }
@@ -79,6 +79,8 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .lbAllTime .lbAtLabel { font-size:7px; opacity:0.4; letter-spacing:0.12em; text-transform:uppercase; color:#ffe566; }
 .lbAllTime .lbAtName { font-size:11px; color:#4fc3f7; letter-spacing:0.08em; text-transform:uppercase; }
 .lbAllTime .lbAtScore { font-size:11px; color:#ffe566; font-weight:700; }
+.cryEmoji { position:fixed; font-size:28px; z-index:25; pointer-events:none; animation:cryFall linear forwards; }
+@keyframes cryFall { 0% { opacity:1; transform:translateY(0) rotate(0deg); } 80% { opacity:1; } 100% { opacity:0; transform:translateY(100vh) rotate(40deg); } }
 #adOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:50; display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; padding:24px; }
 #adOverlay.adShow { display:flex; }
 #adOverlay .adTitle { font-size:14px; letter-spacing:0.2em; text-transform:uppercase; color:#4fc3f7; }
@@ -143,7 +145,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 <div id="overlay">
   <h1 id="olTitle">NEURON</h1>
   <div id="olBody">
-    <div class="info" id="lobbyInfo">Grow dendrites · reach synaptic targets<br>Don't cross the branches</div>
+    <div class="info" id="lobbyInfo">Grow dendrites · reach synaptic targets<br>Don't cross the branches<br><a href="/gallery.html" style="color:rgba(79,195,247,0.5);font-size:10px;">[&#x1F9E0; BRAIN GALLERY]</a></div>
   </div>
   <button id="mainBtn">FIRE SIGNAL</button>
 </div>
@@ -1552,12 +1554,33 @@ function runGame() {
       '<div class="shareRow">' +
         '<button class="shareBtn" id="btnX">SHARE ON X</button>' +
         '<button class="shareBtn" id="btnFB">FACEBOOK</button>' +
+        '<a class="shareBtn" href="/gallery.html" style="border-color:rgba(79,195,247,0.4);color:rgba(79,195,247,0.6);">\uD83E\uDDE0 BRAIN GALLERY</a>' +
       '</div>';
     mainBtn.textContent = 'REGENERATE';
     mainBtn.style.borderColor = '#4fc3f7';
     mainBtn.style.color = '#4fc3f7';
     overlay.style.display = 'flex';
     fetchGlobalCount(); // Refresh counter between games
+
+    // Crying emoji rain for score 0
+    if (score === 0) {
+      var cryEmojis = ['\uD83D\uDE2D', '\uD83D\uDE22', '\uD83D\uDE25', '\uD83E\uDD7A'];
+      for (var ci = 0; ci < 20; ci++) {
+        (function(i) {
+          setTimeout(function() {
+            var em = document.createElement('div');
+            em.className = 'cryEmoji';
+            em.textContent = cryEmojis[Math.floor(Math.random() * cryEmojis.length)];
+            em.style.left = (Math.random() * 90 + 5) + 'vw';
+            em.style.top = -(Math.random() * 40 + 20) + 'px';
+            em.style.animationDuration = (2.5 + Math.random() * 2) + 's';
+            em.style.fontSize = (22 + Math.random() * 18) + 'px';
+            document.body.appendChild(em);
+            setTimeout(function() { em.remove(); }, 5000);
+          }, i * 150);
+        })(ci);
+      }
+    }
 
     // Auto-submit if we already have a name
     var submitted = false;
@@ -1643,6 +1666,21 @@ function runGame() {
       submitBtnEl.textContent = '...';
       submitBtnEl.className = 'submitBtn submitFlash';
       submitScore(n, score, function() {
+        // Save neuron to gallery if score >= 5
+        if (score >= 5 && frozenBranches.length > 0) {
+          var galleryData = {
+            name: n,
+            score: score,
+            branches: frozenBranches.map(function(b) { return { path: b.path, origName: b.origName }; }),
+            soma_x: somaGX,
+            soma_y: somaGY,
+            axon_pts: axonPts,
+            cols: COLS,
+            rows: ROWS,
+            platform: platform
+          };
+          sb.from('neuron_gallery').insert(galleryData).then(function() {}).catch(function() {});
+        }
         // Pop animation on checkmark — force reflow to guarantee animation triggers
         submitBtnEl.textContent = '\u2713';
         submitBtnEl.style.borderColor = '#4fc3f7';

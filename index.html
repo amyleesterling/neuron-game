@@ -103,6 +103,9 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 @keyframes hsPop { 0% { transform:scale(0); opacity:0; } 60% { transform:scale(1.4); opacity:1; } 100% { transform:scale(1); } }
 .submitDevil { cursor:not-allowed !important; font-size:18px; border-color:#ff2222 !important; color:#ff2222 !important; }
 @keyframes devilShake { 0%,100% { transform:translateX(0); } 20% { transform:translateX(-4px); } 40% { transform:translateX(4px); } 60% { transform:translateX(-3px); } 80% { transform:translateX(3px); } }
+@keyframes galleryGlow { 0% { border-color:rgba(79,195,247,0.15); color:rgba(79,195,247,0.4); box-shadow:0 0 0 rgba(79,195,247,0); } 50% { border-color:#4fc3f7; color:#4fc3f7; box-shadow:0 0 18px rgba(79,195,247,0.5); } 100% { border-color:rgba(79,195,247,0.15); color:rgba(79,195,247,0.4); box-shadow:0 0 0 rgba(79,195,247,0); } }
+@keyframes galleryNudgeFade { 0% { opacity:0; transform:translateY(-8px); } 15% { opacity:1; transform:translateY(0); } 85% { opacity:1; transform:translateY(0); } 100% { opacity:0; transform:translateY(4px); } }
+@keyframes galleryArrowBounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(4px); } }
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897605867387651" crossorigin="anonymous"></script>
 <script src="https://imasdk.googleapis.com/js/sdkloader/ima3.js"></script>
@@ -607,7 +610,7 @@ function runGame() {
   function worldY(gy) { return gy * CELL + CELL / 2; }
 
   function initGame() {
-    score = 0;
+    score = 0; gallerySaved = false;
     branches = [];
     activeIdx = 0;
     dots = [];
@@ -1561,7 +1564,10 @@ function runGame() {
     mainBtn.style.fontWeight = '900';
     mainBtn.style.padding = '15px 44px';
     mainBtn.style.fontSize = '14px';
-    document.getElementById('galleryLink').style.display = 'inline-block';
+    var gl = document.getElementById('galleryLink');
+    gl.style.display = 'inline-block';
+    gl.style.animation = 'galleryGlow 1.5s ease-in-out 3';
+    gl.addEventListener('animationend', function() { gl.style.animation = ''; }, {once: true});
     overlay.style.display = 'flex';
     fetchGlobalCount(); // Refresh counter between games
 
@@ -1634,6 +1640,7 @@ function runGame() {
 
     // Auto-submit if we already have a name
     var submitted = false;
+    var gallerySaved = false;
     var nameIn = document.getElementById('nameIn');
     var submitBtnEl = document.getElementById('submitBtn');
     var lbArea = document.getElementById('lbArea');
@@ -1716,8 +1723,9 @@ function runGame() {
       submitBtnEl.textContent = '...';
       submitBtnEl.className = 'submitBtn submitFlash';
       submitScore(n, score, function() {
-        // Save neuron to gallery if score >= 5
-        if (score >= 5 && frozenBranches.length > 0) {
+        // Save neuron to gallery if score >= 5 (only once per game)
+        if (score >= 5 && frozenBranches.length > 0 && !gallerySaved) {
+          gallerySaved = true;
           var galleryData = {
             name: n,
             score: score,
@@ -1730,6 +1738,26 @@ function runGame() {
             platform: platform
           };
           sb.from('neuron_gallery').insert(galleryData).then(function() {}).catch(function() {});
+          // Show congrats nudge pointing to gallery link
+          setTimeout(function() {
+            var gl = document.getElementById('galleryLink');
+            if (!gl) return;
+            // Remove any existing nudge
+            var old = document.getElementById('galleryNudge');
+            if (old) old.remove();
+            var nudge = document.createElement('div');
+            nudge.id = 'galleryNudge';
+            nudge.style.cssText = 'text-align:center;margin-top:6px;animation:galleryNudgeFade 4.5s ease-in-out forwards;';
+            nudge.innerHTML = '<span style="font-size:10px;letter-spacing:0.12em;color:#ffe566;text-transform:uppercase;">your neuron earned a place in the gallery</span>' +
+              '<div style="animation:galleryArrowBounce 0.6s ease-in-out infinite;color:#4fc3f7;font-size:16px;margin-top:2px;">&#8595;</div>';
+            gl.parentNode.insertBefore(nudge, gl);
+            // Restart gallery glow
+            gl.style.animation = 'none';
+            void gl.offsetWidth;
+            gl.style.animation = 'galleryGlow 1.5s ease-in-out 4';
+            // Clean up nudge after animation
+            nudge.addEventListener('animationend', function() { nudge.remove(); });
+          }, 800);
         }
         // Pop animation on checkmark — force reflow to guarantee animation triggers
         submitBtnEl.textContent = '\u2713';

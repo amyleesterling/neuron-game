@@ -31,7 +31,11 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 #overlay { position:fixed; inset:0; background:rgba(0,0,0,0.55); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; z-index:20; text-align:center; padding:32px; }
 #overlay h1 { font-size:52px; font-weight:900; letter-spacing:0.15em; color:#4fc3f7; text-shadow:0 0 30px rgba(79,195,247,0.9); }
 .info { font-size:11px; line-height:2.3; opacity:0.5; text-transform:uppercase; letter-spacing:0.08em; }
-#lobbyStats { position:fixed; bottom:16px; left:0; right:0; text-align:center; z-index:21; pointer-events:none; }
+#lobbyStats { position:fixed; bottom:30px; left:0; right:0; text-align:center; z-index:21; pointer-events:none; }
+#snakeBadge { position:fixed; bottom:8px; left:50%; transform:translateX(-50%); display:inline-block; padding:5px 16px; border:1px solid rgba(76,175,80,0.45); background:rgba(76,175,80,0.08); font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:#4caf50; text-decoration:none; z-index:22; transition:border-color 0.3s, background 0.3s, color 0.3s; }
+#snakeBadge:hover { border-color:#4caf50; background:rgba(76,175,80,0.18); color:#66bb6a; }
+#snakeBadge .snakeTicker { color:#ffe566; font-weight:700; }
+#snakeCanvas { position:fixed; inset:0; pointer-events:none; z-index:21; }
 .lobbyStat { display:inline-block; }
 .lobbyStat .lsNum { font-size:22px; font-weight:700; color:#ffe566; margin-right:4px; }
 .lobbyStat .lsLabel { font-size:11px; opacity:0.35; letter-spacing:0.1em; text-transform:uppercase; }
@@ -144,6 +148,148 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
   <button id="mainBtn">FIRE SIGNAL</button>
 </div>
 <div id="lobbyStats"></div>
+<a id="snakeBadge" href="https://pump.fun/coin/8e5kbfG3uFDwLEL6WCeJ9P53DDjh2W4Ls4H1EEMBpump" target="_blank" rel="noopener">powered by <span class="snakeTicker">$SNAKE</span></a>
+<canvas id="snakeCanvas"></canvas>
+
+<script>
+// ── $SNAKE hover animation ──
+(function() {
+  var sc = document.getElementById('snakeCanvas');
+  var sx = sc.getContext('2d');
+  var badge = document.getElementById('snakeBadge');
+  var anim = null;
+  var snakeTrail = [];
+  var t = 0;
+  var duration = 1.1; // seconds for full flight
+  var segLen = 6;
+  var segs = 28;
+  var alive = false;
+
+  function resize() {
+    sc.width = window.innerWidth;
+    sc.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Exponential curve from badge right edge to top-right corner
+  function curvePoint(p) {
+    var br = badge.getBoundingClientRect();
+    var startX = br.right + 4;
+    var startY = br.top + br.height / 2;
+    var endX = sc.width - 20;
+    var endY = -30;
+    // Exponential ease: x linear, y exponential rise
+    var x = startX + (endX - startX) * p;
+    // Exponential curve upward
+    var exp = Math.pow(p, 2.2);
+    var y = startY + (endY - startY) * exp;
+    // Add sinusoidal slither perpendicular to path
+    var dx = endX - startX;
+    var dy = (endY - startY) * 2.2 * Math.pow(Math.max(p, 0.01), 1.2);
+    var len = Math.sqrt(dx * dx + dy * dy) || 1;
+    var nx = -dy / len;
+    var ny = dx / len;
+    var slither = Math.sin(p * 18 + t * 6) * (7 - 4 * p);
+    return { x: x + nx * slither, y: y + ny * slither };
+  }
+
+  function drawSnake() {
+    sx.clearRect(0, 0, sc.width, sc.height);
+    if (snakeTrail.length < 2) return;
+
+    // Body glow
+    sx.save();
+    sx.shadowColor = '#4caf50';
+    sx.shadowBlur = 12;
+    sx.strokeStyle = '#4caf50';
+    sx.lineWidth = 3.5;
+    sx.lineCap = 'round';
+    sx.lineJoin = 'round';
+    sx.beginPath();
+    sx.moveTo(snakeTrail[0].x, snakeTrail[0].y);
+    for (var i = 1; i < snakeTrail.length; i++) {
+      sx.lineTo(snakeTrail[i].x, snakeTrail[i].y);
+    }
+    sx.stroke();
+    sx.restore();
+
+    // Brighter core
+    sx.strokeStyle = '#66bb6a';
+    sx.lineWidth = 1.8;
+    sx.lineCap = 'round';
+    sx.lineJoin = 'round';
+    sx.beginPath();
+    sx.moveTo(snakeTrail[0].x, snakeTrail[0].y);
+    for (var j = 1; j < snakeTrail.length; j++) {
+      sx.lineTo(snakeTrail[j].x, snakeTrail[j].y);
+    }
+    sx.stroke();
+
+    // Head - bright dot
+    var head = snakeTrail[snakeTrail.length - 1];
+    sx.beginPath();
+    sx.arc(head.x, head.y, 3.5, 0, Math.PI * 2);
+    sx.fillStyle = '#ffe566';
+    sx.shadowColor = '#ffe566';
+    sx.shadowBlur = 10;
+    sx.fill();
+    sx.shadowBlur = 0;
+
+    // Eyes
+    var prev = snakeTrail[snakeTrail.length - 2];
+    var ang = Math.atan2(head.y - prev.y, head.x - prev.x);
+    var ex1 = head.x + Math.cos(ang + 0.6) * 3;
+    var ey1 = head.y + Math.sin(ang + 0.6) * 3;
+    var ex2 = head.x + Math.cos(ang - 0.6) * 3;
+    var ey2 = head.y + Math.sin(ang - 0.6) * 3;
+    sx.fillStyle = '#ff4466';
+    sx.beginPath();
+    sx.arc(ex1, ey1, 1.2, 0, Math.PI * 2);
+    sx.fill();
+    sx.beginPath();
+    sx.arc(ex2, ey2, 1.2, 0, Math.PI * 2);
+    sx.fill();
+  }
+
+  function tick() {
+    if (!alive) return;
+    t += 0.018;
+    var raw = t / duration;
+    var tailLen = 0.18;
+    var headP = Math.min(raw, 1.0);
+    var tailP = Math.max(raw - tailLen, 0);
+
+    snakeTrail = [];
+    var lo = Math.min(tailP, 1.0);
+    var hi = Math.min(headP, 1.0);
+    if (hi > lo) {
+      var steps = Math.max(Math.floor((hi - lo) * 200), 2);
+      for (var i = 0; i <= steps; i++) {
+        var p = lo + (hi - lo) * (i / steps);
+        snakeTrail.push(curvePoint(p));
+      }
+    }
+    drawSnake();
+
+    if (tailP >= 1.0) {
+      sx.clearRect(0, 0, sc.width, sc.height);
+      alive = false;
+      return;
+    }
+    anim = requestAnimationFrame(tick);
+  }
+
+  badge.addEventListener('mouseenter', function() {
+    if (alive) return;
+    alive = true;
+    t = 0;
+    snakeTrail = [];
+    resize();
+    tick();
+  });
+})();
+</script>
 
 <script>
 // Global error catcher — shows errors visibly on screen
@@ -855,6 +1001,7 @@ function runGame() {
     olTitle.textContent = 'NEURON';
     olTitle.style.color = '#4fc3f7';
     olTitle.style.textShadow = '0 0 30px rgba(79,195,247,0.9)';
+    document.getElementById('snakeBadge').style.display = 'none';
 
     var btns = '';
     if (!stripeLivesUsed) {
@@ -1384,6 +1531,7 @@ function runGame() {
     olTitle.textContent = 'APOPTOSIS';
     olTitle.style.color = '#ff4466';
     olTitle.style.textShadow = '0 0 30px rgba(255,68,102,0.8)';
+    document.getElementById('snakeBadge').style.display = 'none';
 
     var nameVal = playerName ? ' value="' + esc(playerName) + '"' : '';
     olBody.innerHTML =
@@ -1762,6 +1910,7 @@ function runGame() {
       olTitle.textContent = 'NEURON';
       olTitle.style.color = '';
       olTitle.style.textShadow = '';
+      document.getElementById('snakeBadge').style.display = 'inline-block';
       var infoTxt = 'Grow dendrites · reach synaptic targets<br>Don\'t cross existing branches';
       if (isMobile) infoTxt += '<br><br>TAP where you want to turn';
       olBody.innerHTML = '<div class="info">' + infoTxt + '</div>';

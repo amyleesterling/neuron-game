@@ -1907,10 +1907,10 @@ function runGame() {
       }
       overlay.style.display = 'none';
       document.getElementById('lobbyStats').style.display = 'none';
+      document.getElementById('snakeBadge').style.display = 'none';
       olTitle.textContent = 'NEURON';
       olTitle.style.color = '';
       olTitle.style.textShadow = '';
-      document.getElementById('snakeBadge').style.display = 'inline-block';
       var infoTxt = 'Grow dendrites · reach synaptic targets<br>Don\'t cross existing branches';
       if (isMobile) infoTxt += '<br><br>TAP where you want to turn';
       olBody.innerHTML = '<div class="info">' + infoTxt + '</div>';
@@ -1919,7 +1919,6 @@ function runGame() {
       gState = 'playing';
       var gc = parseInt(localStorage.getItem('neuron_games_played') || '0', 10) + 1;
       localStorage.setItem('neuron_games_played', gc);
-      updateLobbyStats();
       initGame();
     } catch(e) {
       var box = document.getElementById('errBox');

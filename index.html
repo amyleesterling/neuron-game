@@ -146,6 +146,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
     <div class="info" id="lobbyInfo">Grow dendrites · reach synaptic targets<br>Don't cross the branches<br><a href="/gallery.html" style="color:rgba(79,195,247,0.5);font-size:10px;">[&#x1F9E0; NEURON GALLERY]</a></div>
   </div>
   <button id="mainBtn">FIRE SIGNAL</button>
+  <a id="galleryLink" href="/gallery.html" style="display:none;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(79,195,247,0.4);text-decoration:none;border:1px solid rgba(79,195,247,0.15);padding:8px 20px;">&#x1F9E0; NEURON GALLERY</a>
 </div>
 <div id="lobbyStats"></div>
 <a id="snakeBadge" href="https://pump.fun/coin/8e5kbfG3uFDwLEL6WCeJ9P53DDjh2W4Ls4H1EEMBpump" target="_blank" rel="noopener">powered by <span class="snakeTicker">$SNAKE</span></a>
@@ -1552,11 +1553,15 @@ function runGame() {
       '<div class="shareRow">' +
         '<button class="shareBtn" id="btnX">SHARE ON X</button>' +
         '<button class="shareBtn" id="btnFB">FACEBOOK</button>' +
-      '</div>' +
-      '<a href="/gallery.html" style="display:inline-block;margin-top:14px;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(79,195,247,0.45);text-decoration:none;border:1px solid rgba(79,195,247,0.2);padding:8px 20px;">\uD83E\uDDE0 NEURON GALLERY</a>';
+      '</div>';
     mainBtn.textContent = 'REGENERATE';
     mainBtn.style.borderColor = '#4fc3f7';
-    mainBtn.style.color = '#4fc3f7';
+    mainBtn.style.color = '#000';
+    mainBtn.style.background = '#4fc3f7';
+    mainBtn.style.fontWeight = '900';
+    mainBtn.style.padding = '15px 44px';
+    mainBtn.style.fontSize = '14px';
+    document.getElementById('galleryLink').style.display = 'inline-block';
     overlay.style.display = 'flex';
     fetchGlobalCount(); // Refresh counter between games
 
@@ -1992,6 +1997,12 @@ function runGame() {
       if (isMobile) infoTxt += '<br><br>TAP where you want to turn';
       olBody.innerHTML = '<div class="info">' + infoTxt + '</div>';
       mainBtn.textContent = 'FIRE SIGNAL';
+      mainBtn.style.background = 'transparent';
+      mainBtn.style.color = '#4fc3f7';
+      mainBtn.style.fontWeight = '';
+      mainBtn.style.padding = '';
+      mainBtn.style.fontSize = '';
+      document.getElementById('galleryLink').style.display = 'none';
       isDemo = false;
       gState = 'playing';
       var gc = parseInt(localStorage.getItem('neuron_games_played') || '0', 10) + 1;

@@ -1720,25 +1720,27 @@ function runGame() {
         return;
       }
       submitted = true;
+      // Save neuron to gallery ONCE per game (synchronous flag before any async)
+      if (score >= 5 && frozenBranches.length > 0 && !gallerySaved) {
+        gallerySaved = true;
+        var galleryData = {
+          name: n,
+          score: score,
+          branches: frozenBranches.map(function(b) { return { path: b.path, origName: b.origName }; }),
+          soma_x: somaGX,
+          soma_y: somaGY,
+          axon_pts: axonPts,
+          cols: COLS,
+          rows: ROWS,
+          platform: platform
+        };
+        sb.from('neuron_gallery').insert(galleryData).then(function() {}).catch(function() {});
+      }
       submitBtnEl.textContent = '...';
       submitBtnEl.className = 'submitBtn submitFlash';
       submitScore(n, score, function() {
-        // Save neuron to gallery if score >= 5 (only once per game)
-        if (score >= 5 && frozenBranches.length > 0 && !gallerySaved) {
-          gallerySaved = true;
-          var galleryData = {
-            name: n,
-            score: score,
-            branches: frozenBranches.map(function(b) { return { path: b.path, origName: b.origName }; }),
-            soma_x: somaGX,
-            soma_y: somaGY,
-            axon_pts: axonPts,
-            cols: COLS,
-            rows: ROWS,
-            platform: platform
-          };
-          sb.from('neuron_gallery').insert(galleryData).then(function() {}).catch(function() {});
-          // Show congrats nudge pointing to gallery link
+        // Show congrats nudge pointing to gallery link
+        if (gallerySaved) {
           setTimeout(function() {
             var gl = document.getElementById('galleryLink');
             if (!gl) return;

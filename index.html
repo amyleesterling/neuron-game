@@ -328,7 +328,7 @@ function runGame() {
     opts = opts || {};
     var lim = opts.limit || LB_PAGE_SIZE;
     var hours = opts.hours || 0; // 0 = all time
-    var query = sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(lim);
+    var query = sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(lim).gt('score', 0);
     if (plat) query = query.eq('platform', plat);
     if (hours > 0) {
       var since = new Date(Date.now() - hours * 3600000).toISOString();
@@ -337,7 +337,7 @@ function runGame() {
     query.then(function(res) {
       if (res.error) {
         // Fallback: if created_at filter failed or platform filter failed, try without
-        var fb = sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(lim);
+        var fb = sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(lim).gt('score', 0);
         fb.then(function(res2) { callback(res2.data || []); });
       } else {
         callback(res.data || []);
@@ -1556,8 +1556,8 @@ function runGame() {
       '</div>';
     mainBtn.textContent = 'REGENERATE';
     mainBtn.style.borderColor = '#4fc3f7';
-    mainBtn.style.color = '#000';
-    mainBtn.style.background = '#4fc3f7';
+    mainBtn.style.color = '#fff';
+    mainBtn.style.background = 'rgba(79,195,247,0.3)';
     mainBtn.style.fontWeight = '900';
     mainBtn.style.padding = '15px 44px';
     mainBtn.style.fontSize = '14px';
@@ -1591,7 +1591,7 @@ function runGame() {
               var rect = scoreEl.getBoundingClientRect();
               var tx = rect.left + rect.width / 2 + (Math.random() - 0.5) * 60;
               var ty = rect.top + rect.height / 2;
-              // Draw jagged bolt from top to score
+              // Draw jagged bolt from random edge to score
               lx.save();
               lx.strokeStyle = '#fff';
               lx.lineWidth = 3;
@@ -1599,14 +1599,20 @@ function runGame() {
               lx.shadowBlur = 25;
               lx.lineCap = 'round';
               lx.beginPath();
-              var bx = tx + (Math.random() - 0.5) * 100;
-              var by = 0;
+              var side = Math.floor(Math.random() * 5); // 0=top,1=left,2=right,3=TL corner,4=TR corner
+              var bx, by;
+              if (side === 0) { bx = tx + (Math.random() - 0.5) * 200; by = 0; }
+              else if (side === 1) { bx = 0; by = Math.random() * ty; }
+              else if (side === 2) { bx = lc.width; by = Math.random() * ty; }
+              else if (side === 3) { bx = Math.random() * 80; by = Math.random() * 80; }
+              else { bx = lc.width - Math.random() * 80; by = Math.random() * 80; }
               lx.moveTo(bx, by);
+              var startX = bx, startY = by;
               var segs = 8 + Math.floor(Math.random() * 5);
               for (var s = 1; s <= segs; s++) {
                 var frac = s / segs;
-                bx = tx + (1 - frac) * (bx - tx) + (Math.random() - 0.5) * 80;
-                by = frac * ty;
+                bx = startX + frac * (tx - startX) + (Math.random() - 0.5) * 80;
+                by = startY + frac * (ty - startY) + (Math.random() - 0.5) * 80;
                 lx.lineTo(bx, by);
               }
               lx.lineTo(tx, ty);

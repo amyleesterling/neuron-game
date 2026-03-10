@@ -1559,7 +1559,7 @@ function runGame() {
 
   // Banned words filter for leaderboard names
   var bannedWords = [
-    'fuck','fuk','fck','fuq','shit','sht','bitch','bastard','stfu','ass','damn',
+    'fuck','fuk','fck','fuq','fucc','shit','sht','bitch','bastard','stfu','ass','damn',
     'nigger','nigga','nigg','chink','spic','kike','gook','coon','beaner','wetback','darkie','raghead','paki',
     'fag','faggot','dyke','tranny',
     'retard','retrd',
@@ -1567,7 +1567,7 @@ function runGame() {
     'nazi','hitler','kkk','pedo','paedo'
   ];
   function normalizeName(name) {
-    return name.toLowerCase().replace(/1/g,'i').replace(/0/g,'o').replace(/3/g,'e').replace(/4/g,'a').replace(/5/g,'s').replace(/@/g,'a').replace(/\$/g,'s').replace(/7/g,'t');
+    return name.toLowerCase().replace(/1/g,'i').replace(/0/g,'o').replace(/3/g,'e').replace(/4/g,'a').replace(/5/g,'s').replace(/@/g,'a').replace(/\$/g,'s').replace(/7/g,'t').replace(/(.)\1+/g,'$1');
   }
   function hasBannedWord(name) {
     var norm = normalizeName(name);

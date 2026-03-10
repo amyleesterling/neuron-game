@@ -33,6 +33,12 @@ a:hover { color:#80d8ff; }
 .card .cardName { font-size:10px; color:#4fc3f7; letter-spacing:0.12em; text-transform:uppercase; margin-top:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .card .cardScore { font-size:14px; font-weight:700; color:#ffe566; margin-top:2px; }
 .card .cardDate { font-size:8px; opacity:0.25; letter-spacing:0.1em; text-transform:uppercase; margin-top:4px; }
+.card.topBrain { border-color:rgba(255,215,0,0.5); box-shadow:0 0 18px rgba(255,215,0,0.15); position:relative; }
+.card.topBrain::before { content:'\1F451'; position:absolute; top:-14px; left:50%; transform:translateX(-50%); font-size:20px; filter:drop-shadow(0 0 6px rgba(255,215,0,0.6)); }
+.card.topBrain .cardName { color:#ffd700; text-shadow:0 0 8px rgba(255,215,0,0.4); }
+.cardPlatform { font-size:7px; letter-spacing:0.15em; text-transform:uppercase; margin-top:4px; padding:2px 6px; display:inline-block; border-radius:0; }
+.cardPlatform.plat-mobile { color:rgba(76,175,80,0.7); border:1px solid rgba(76,175,80,0.25); }
+.cardPlatform.plat-desktop { color:rgba(156,120,255,0.7); border:1px solid rgba(156,120,255,0.25); }
 
 .loadMore { display:block; margin:0 auto 60px; background:transparent; border:1px solid rgba(79,195,247,0.2); color:rgba(160,216,240,0.35); font-family:'Courier New',monospace; font-size:9px; letter-spacing:0.15em; padding:10px 30px; cursor:pointer; text-transform:uppercase; }
 .loadMore:hover { border-color:rgba(79,195,247,0.5); color:rgba(160,216,240,0.6); }
@@ -51,11 +57,20 @@ a:hover { color:#80d8ff; }
   90%  { opacity:0.85; }
   100% { top:110vh; opacity:0; transform:rotate(-3deg); }
 }
+#floatPepe { position:fixed; left:5vw; top:-220px; width:180px; pointer-events:none; z-index:9999; opacity:0; }
+@keyframes pepeFloat {
+  0%   { top:-220px; opacity:0; transform:rotate(5deg); }
+  5%   { opacity:0.9; }
+  50%  { transform:rotate(-5deg); }
+  90%  { opacity:0.9; }
+  100% { top:110vh; opacity:0; transform:rotate(3deg); }
+}
 </style>
 </head>
 <body>
 
 <img id="floatDoge" src="doge_neuron.png" alt="wow much neuron">
+<img id="floatPepe" src="pepe_neuron_2.png" alt="feels good man">
 
 <div class="header">
   <h1>NEURON GALLERY</h1>
@@ -80,7 +95,10 @@ a:hover { color:#80d8ff; }
 <button class="loadMore" id="loadMore" style="display:none;">LOAD MORE</button>
 <div class="empty" id="emptyMsg" style="display:none;">No neurons yet. Score 5+ to appear here!</div>
 
-<div style="text-align:center;padding:40px 0 30px;">
+<div style="text-align:center;padding:40px 0 10px;">
+  <img src="pepe_champagne_gallery.png" alt="pepe celebrates" style="width:120px;opacity:0.7;">
+</div>
+<div style="text-align:center;padding:10px 0 30px;">
   <a id="snakeBadge" href="https://pump.fun/coin/8e5kbfG3uFDwLEL6WCeJ9P53DDjh2W4Ls4H1EEMBpump" target="_blank" rel="noopener">powered by <span class="snakeTicker">$SNAKE</span></a>
 </div>
 
@@ -205,6 +223,13 @@ a:hover { color:#80d8ff; }
     dt.className = 'cardDate';
     dt.textContent = formatDate(entry.created_at);
     card.appendChild(dt);
+    if (entry.platform && platformFilter === 'all') {
+      var plat = document.createElement('div');
+      plat.className = 'cardPlatform plat-' + entry.platform;
+      plat.textContent = entry.platform === 'mobile' ? '\u25C8 MOBILE' : '\u25A3 DESKTOP';
+      card.appendChild(plat);
+    }
+    card.dataset.score = entry.score;
     renderNeuron(c, entry);
     return card;
   }
@@ -235,6 +260,15 @@ a:hover { color:#80d8ff; }
       }
       offset += rows.length;
       loadMoreBtn.style.display = rows.length >= PAGE_SIZE ? '' : 'none';
+      // Crown the top brain
+      var cards = gallery.querySelectorAll('.card');
+      var maxScore = -1, topCard = null;
+      cards.forEach(function(c) {
+        c.classList.remove('topBrain');
+        var s = parseInt(c.dataset.score, 10);
+        if (s > maxScore) { maxScore = s; topCard = c; }
+      });
+      if (topCard) topCard.classList.add('topBrain');
     });
   }
 
@@ -264,6 +298,24 @@ a:hover { color:#80d8ff; }
   });
 
   loadMoreBtn.addEventListener('click', function() { loadEntries(true); });
+
+  // Konami code: up up down down left right left right b a
+  var konamiSeq = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+  var konamiPos = 0;
+  document.addEventListener('keydown', function(e) {
+    if (e.key === konamiSeq[konamiPos]) {
+      konamiPos++;
+      if (konamiPos === konamiSeq.length) {
+        konamiPos = 0;
+        var pepe = document.getElementById('floatPepe');
+        pepe.style.animation = 'none';
+        pepe.offsetHeight;
+        pepe.style.animation = 'pepeFloat 10s ease-in-out 0s forwards';
+      }
+    } else {
+      konamiPos = e.key === konamiSeq[0] ? 1 : 0;
+    }
+  });
 
   // Initial load
   loadEntries(false);

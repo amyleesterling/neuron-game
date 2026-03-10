@@ -1628,6 +1628,7 @@ function runGame() {
     gl.style.display = 'inline-block';
     gl.style.animation = 'galleryGlow 1.5s ease-in-out 3';
     gl.addEventListener('animationend', function() { gl.style.animation = ''; }, {once: true});
+    document.getElementById('lobbyStats').style.display = 'none';
     overlay.style.display = 'flex';
     fetchGlobalCount(); // Refresh counter between games
 

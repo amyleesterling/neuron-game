@@ -3,7 +3,9 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>NEURON</title>
 <meta name="description" content="NEURON - snake, but a neuron">
 <meta property="og:title" content="NEURON">
@@ -21,7 +23,7 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { width:100%; height:100%; background:#000; overflow:hidden; font-family:'Courier New',monospace; color:#a0d8f0; touch-action:none; -webkit-user-select:none; user-select:none; }
-#hud { position:fixed; top:0; left:0; right:0; height:46px; display:flex; justify-content:space-between; align-items:center; padding:0 16px; background:rgba(0,0,0,0.6); z-index:10; pointer-events:none; }
+#hud { position:fixed; top:0; left:0; right:0; height:calc(46px + env(safe-area-inset-top, 0px)); display:flex; justify-content:space-between; align-items:center; padding:env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); background:rgba(0,0,0,0.6); z-index:10; pointer-events:none; }
 #hudTitle { font-size:17px; font-weight:900; letter-spacing:0.2em; color:#4fc3f7; }
 #hudRight { display:flex; gap:18px; }
 .hudStat { text-align:right; }
@@ -111,6 +113,20 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-0897605867387651" crossorigin="anonymous"></script>
 <script src="https://imasdk.googleapis.com/js/sdkloader/ima3.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// Capacitor StatusBar — hide for fullscreen gaming (bridge auto-injected in native shell)
+(function() {
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+      var StatusBar = window.Capacitor.Plugins.StatusBar;
+      if (StatusBar) {
+        StatusBar.hide().catch(function() {});
+        StatusBar.setBackgroundColor({ color: '#000000' }).catch(function() {});
+      }
+    }
+  });
+})();
+</script>
 </head>
 <body>
 
@@ -147,10 +163,11 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 <div id="overlay">
   <h1 id="olTitle">NEURON</h1>
   <div id="olBody">
-    <div class="info" id="lobbyInfo">Grow dendrites · reach synaptic targets<br>Don't cross the branches<br><a href="/gallery.html" style="color:rgba(79,195,247,0.5);font-size:10px;">[&#x1F9E0; NEURON GALLERY]</a></div>
+    <div class="info" id="lobbyInfo">Grow dendrites · reach synaptic targets<br>Don't cross the branches</div>
   </div>
   <button id="mainBtn">FIRE SIGNAL</button>
-  <a id="galleryLink" href="/gallery.html" style="display:none;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(79,195,247,0.4);text-decoration:none;border:1px solid rgba(79,195,247,0.15);padding:8px 20px;">&#x1F9E0; NEURON GALLERY</a>
+  <a id="galleryLink" href="/gallery.html" style="display:none;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:1px solid rgba(79,195,247,0.35);padding:8px 20px;"><img src="/synaptica-flag-vF.jpg" style="height:14px;vertical-align:middle;margin-right:4px;border-radius:2px;"> NEURON GALLERY</a>
+  <a id="countryLbLink" href="/leaderboard.html" style="display:none;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:1px solid rgba(79,195,247,0.35);padding:8px 20px;">&#x1F30D; COUNTRY LEADERBOARDS</a>
 </div>
 <div id="lobbyStats"></div>
 <a id="snakeBadge" href="https://pump.fun/coin/8e5kbfG3uFDwLEL6WCeJ9P53DDjh2W4Ls4H1EEMBpump" target="_blank" rel="noopener">powered by <span class="snakeTicker">$SNAKE</span></a>
@@ -316,17 +333,28 @@ window.addEventListener('load', function() {
 
 function runGame() {
 
-  // Supabase leaderboard
+  // Supabase leaderboard (new project with country_code support)
   var sb = window.supabase.createClient(
-    'https://javthknksdcrlhiaaptj.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphdnRoa25rc2RjcmxoaWFhcHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2MzUyOTIsImV4cCI6MjA4ODIxMTI5Mn0.APdwuQ-uudyHISBr7Dj6HTylO7qavJ0HhB32E5X434g'
+    'https://amyxocqdfcaeieerqllv.supabase.co',
+    'sb_publishable_uvng-9IdwolvuiCG9pQTIQ_1gyaKOVH'
   );
   var playerName = localStorage.getItem('neuron_name') || '';
   function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
   var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 900);
   var platform = isMobile ? 'mobile' : 'desktop';
 
-  var LB_PAGE_SIZE = 10;
+  // Country detection via IP geolocation
+  var countryCode = localStorage.getItem('neuron_country') || null;
+  if (!countryCode) {
+    fetch('https://ipapi.co/json/').then(function(r) { return r.json(); }).then(function(d) {
+      if (d && d.country_code) {
+        countryCode = d.country_code;
+        localStorage.setItem('neuron_country', countryCode);
+      }
+    }).catch(function() { /* silent fail */ });
+  }
+
+  var LB_PAGE_SIZE = 7;
 
   function fetchLeaderboard(plat, callback, opts) {
     opts = opts || {};
@@ -360,7 +388,9 @@ function runGame() {
   function submitScore(name, sc, callback) {
     playerName = name;
     localStorage.setItem('neuron_name', name);
-    sb.from('neuron_snake_leaderboard').insert({name: name, score: sc, platform: platform})
+    var row = {name: name, score: sc, platform: platform};
+    if (countryCode) row.country_code = countryCode;
+    sb.from('neuron_snake_leaderboard').insert(row)
       .then(function(res) {
         if (res.error) {
           return sb.from('neuron_snake_leaderboard').insert({name: name, score: sc});
@@ -406,7 +436,7 @@ function runGame() {
       html += '</tr>';
     }
     html += '</table>';
-    // Show "More" button if we got a full page of results
+    // Show expand button + full leaderboard link
     if (rows.length >= (opts.currentLimit || LB_PAGE_SIZE) && !opts.expanded) {
       html += '<button class="lbMoreBtn" id="lbMoreBtn">\u25BC MORE SCORES</button>';
     }
@@ -895,7 +925,7 @@ function runGame() {
         if (earnedBonus) {
           nextBonusAt += BONUS_LIFE_THRESHOLD;
           lives++;
-          signals[signals.length - 1].onDone = function() {
+          signals[signals.length - 1].onDone = isDemo ? nextBranch : function() {
             showBonusLifeAnim(function() { nextBranch(); });
           };
         } else {
@@ -1626,78 +1656,15 @@ function runGame() {
     mainBtn.style.fontSize = '14px';
     var gl = document.getElementById('galleryLink');
     gl.style.display = 'inline-block';
-    gl.style.animation = 'galleryGlow 1.5s ease-in-out 3';
-    gl.addEventListener('animationend', function() { gl.style.animation = ''; }, {once: true});
+    if (score >= 5) {
+      gl.style.animation = 'galleryGlow 1.5s ease-in-out 3';
+      gl.addEventListener('animationend', function() { gl.style.animation = ''; }, {once: true});
+    }
+    document.getElementById('countryLbLink').style.display = 'inline-block';
     document.getElementById('lobbyStats').style.display = 'none';
     overlay.style.display = 'flex';
     fetchGlobalCount(); // Refresh counter between games
 
-    // Lightning strike on score zone for score 0
-    if (score === 0) {
-      var scoreEl = overlay.querySelector('.bigScore');
-      if (scoreEl) {
-        var strikes = 3;
-        (function doStrike(i) {
-          if (i >= strikes) return;
-          setTimeout(function() {
-            // Flash the whole overlay white briefly
-            overlay.style.background = 'rgba(255,255,255,0.15)';
-            scoreEl.style.color = '#fff';
-            scoreEl.style.textShadow = '0 0 60px #fff, 0 0 120px #4fc3f7';
-            setTimeout(function() {
-              overlay.style.background = 'rgba(0,0,0,0.55)';
-              scoreEl.style.color = '#ffe566';
-              scoreEl.style.textShadow = '0 0 28px rgba(255,229,102,0.9)';
-            }, 80);
-            // Draw lightning bolt on the snake canvas
-            var lc = document.getElementById('snakeCanvas');
-            if (lc) {
-              var lx = lc.getContext('2d');
-              lc.width = window.innerWidth;
-              lc.height = window.innerHeight;
-              var rect = scoreEl.getBoundingClientRect();
-              var tx = rect.left + rect.width / 2 + (Math.random() - 0.5) * 60;
-              var ty = rect.top + rect.height / 2;
-              // Draw jagged bolt from random edge to score
-              lx.save();
-              lx.strokeStyle = '#fff';
-              lx.lineWidth = 3;
-              lx.shadowColor = '#4fc3f7';
-              lx.shadowBlur = 25;
-              lx.lineCap = 'round';
-              lx.beginPath();
-              var side = Math.floor(Math.random() * 5); // 0=top,1=left,2=right,3=TL corner,4=TR corner
-              var bx, by;
-              if (side === 0) { bx = tx + (Math.random() - 0.5) * 200; by = 0; }
-              else if (side === 1) { bx = 0; by = Math.random() * ty; }
-              else if (side === 2) { bx = lc.width; by = Math.random() * ty; }
-              else if (side === 3) { bx = Math.random() * 80; by = Math.random() * 80; }
-              else { bx = lc.width - Math.random() * 80; by = Math.random() * 80; }
-              lx.moveTo(bx, by);
-              var startX = bx, startY = by;
-              var segs = 8 + Math.floor(Math.random() * 5);
-              for (var s = 1; s <= segs; s++) {
-                var frac = s / segs;
-                bx = startX + frac * (tx - startX) + (Math.random() - 0.5) * 80;
-                by = startY + frac * (ty - startY) + (Math.random() - 0.5) * 80;
-                lx.lineTo(bx, by);
-              }
-              lx.lineTo(tx, ty);
-              lx.stroke();
-              // Bright core
-              lx.strokeStyle = '#80d8ff';
-              lx.lineWidth = 1.5;
-              lx.shadowBlur = 0;
-              lx.stroke();
-              lx.restore();
-              // Fade out bolt
-              setTimeout(function() { lx.clearRect(0, 0, lc.width, lc.height); }, 200);
-            }
-            doStrike(i + 1);
-          }, i === 0 ? 300 : 400 + Math.random() * 300);
-        })(0);
-      }
-    }
 
     // Auto-submit if we already have a name
     var submitted = false;
@@ -1795,6 +1762,7 @@ function runGame() {
           rows: ROWS,
           platform: platform
         };
+        if (countryCode) galleryData.country_code = countryCode;
         sb.from('neuron_gallery').insert(galleryData).then(function() {}).catch(function() {});
       }
       submitBtnEl.textContent = '...';
@@ -1903,6 +1871,12 @@ function runGame() {
       }
       // Just show existing leaderboard for current platform (24h default)
       showLb(platform, -1, 24);
+      // Unlock tabs immediately when score is 0 (no submit possible)
+      if (score === 0) {
+        if (tmBtn) { tmBtn.disabled = false; tmBtn.classList.remove('lbTabLocked'); }
+        if (tdBtn) { tdBtn.disabled = false; tdBtn.classList.remove('lbTabLocked'); }
+        if (ttBtn) { ttBtn.disabled = false; ttBtn.classList.remove('lbTabLocked'); }
+      }
     }
 
     var bx = document.getElementById('btnX');
@@ -2060,7 +2034,7 @@ function runGame() {
   function updateLobbyStats() {
     var el = document.getElementById('lobbyStats');
     if (!el) return;
-    if (globalNeuronsPlayed === 0) { el.style.display = 'none'; return; }
+    if (globalNeuronsPlayed === 0 || gState !== 'menu') { el.style.display = 'none'; return; }
     el.style.display = '';
     el.innerHTML =
       '<div class="lobbyStat"><span class="lsNum">' + globalNeuronsPlayed.toLocaleString() + '</span><span class="lsLabel">neurons played</span></div>';
@@ -2100,6 +2074,7 @@ function runGame() {
       mainBtn.style.padding = '';
       mainBtn.style.fontSize = '';
       document.getElementById('galleryLink').style.display = 'none';
+      document.getElementById('countryLbLink').style.display = 'none';
       isDemo = false;
       gState = 'playing';
       var gc = parseInt(localStorage.getItem('neuron_games_played') || '0', 10) + 1;

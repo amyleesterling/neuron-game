@@ -77,6 +77,8 @@ a:hover { color:#80d8ff; }
   <div class="sub">neurons that scored 5+</div>
   <br>
   <a class="backLink" href="/">&#8592; PLAY NEURON</a>
+  &nbsp;
+  <a class="backLink" href="/leaderboard.html">&#x1F30D; GLOBAL LEADERBOARD</a>
 
 </div>
 
@@ -125,10 +127,13 @@ a:hover { color:#80d8ff; }
 
     var cols = data.cols || 48;
     var rows = data.rows || 48;
-    var scale = size / Math.max(cols, rows);
+    var maxDim = Math.max(cols, rows);
+    var scale = size / maxDim;
+    var offX = (size - cols * scale) / 2;
+    var offY = (size - rows * scale) / 2;
 
-    function gx(x) { return x * scale + scale / 2; }
-    function gy(y) { return y * scale + scale / 2; }
+    function gx(x) { return x * scale + scale / 2 + offX; }
+    function gy(y) { return y * scale + scale / 2 + offY; }
 
     // Background
     ctx.fillStyle = '#000';

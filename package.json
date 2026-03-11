@@ -1,0 +1,30 @@
+{
+  "name": "neuron-game",
+  "version": "1.0.0",
+  "description": "Neuron Snake - like snake, but a neuron",
+  "scripts": {
+    "build": "node scripts/copy-www.js",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:android": "npm run build && npx cap sync && npx cap open android",
+    "cap:ios": "npm run build && npx cap sync && npx cap open ios"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amyleesterling/neuron-game.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/amyleesterling/neuron-game/issues"
+  },
+  "homepage": "https://github.com/amyleesterling/neuron-game#readme",
+  "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
+    "@capacitor/ios": "^8.2.0",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.1"
+  }
+}

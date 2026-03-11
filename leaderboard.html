@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>NEURON SNAKE - World Leaderboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; background:#000; overflow:hidden; font-family:'Courier New',monospace; color:#a0d8f0; }
+
+/* Leaflet overrides for dark theme */
+.leaflet-container { background:#0a0a0a !important; }
+.leaflet-control-zoom a { background:#111 !important; color:#4fc3f7 !important; border-color:#222 !important; }
+.leaflet-control-zoom a:hover { background:#1a1a1a !important; }
+.leaflet-control-attribution { display:none !important; }
+
+#map { position:absolute; top:0; left:0; right:0; bottom:0; z-index:1; }
+
+/* Top bar */
+#topBar { position:fixed; top:0; left:0; right:0; height:48px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; background:rgba(0,0,0,0.85); z-index:1000; border-bottom:1px solid rgba(79,195,247,0.15); }
+#topBar .title { font-size:14px; font-weight:900; letter-spacing:0.2em; color:#4fc3f7; text-transform:uppercase; }
+#topBar .backBtn { background:transparent; border:1px solid rgba(79,195,247,0.3); color:#4fc3f7; font-family:'Courier New',monospace; font-size:10px; letter-spacing:0.15em; padding:6px 14px; cursor:pointer; text-transform:uppercase; text-decoration:none; }
+#topBar .backBtn:hover { border-color:#4fc3f7; background:rgba(79,195,247,0.1); }
+#topBar .globalBtn { background:transparent; border:1px solid rgba(255,229,102,0.3); color:#ffe566; font-family:'Courier New',monospace; font-size:9px; letter-spacing:0.12em; padding:6px 12px; cursor:pointer; text-transform:uppercase; }
+#topBar .globalBtn:hover { border-color:#ffe566; background:rgba(255,229,102,0.1); }
+#topBar .globalBtn.active { border-color:#ffe566; background:rgba(255,229,102,0.15); }
+#synapticaToggle { border-color:rgba(255,107,157,0.3) !important; color:#ff6b9d !important; }
+#synapticaToggle:hover { border-color:#ff6b9d !important; background:rgba(255,107,157,0.1) !important; }
+#synapticaToggle.active { border-color:#ff6b9d !important; background:rgba(255,107,157,0.15) !important; }
+
+/* Leaderboard panel */
+#panel { position:fixed; top:48px; right:0; width:340px; bottom:0; background:rgba(0,0,0,0.92); border-left:1px solid rgba(79,195,247,0.12); z-index:999; display:flex; flex-direction:column; transform:translateX(100%); transition:transform 0.3s ease; overflow:hidden; }
+#panel.open { transform:translateX(0); }
+
+#panelHeader { padding:16px; border-bottom:1px solid rgba(79,195,247,0.1); flex-shrink:0; }
+#panelCountry { font-size:20px; font-weight:900; color:#ffe566; letter-spacing:0.1em; }
+#panelFlag { font-size:42px; margin-right:10px; vertical-align:middle; }
+#panelCount { font-size:9px; opacity:0.4; letter-spacing:0.15em; text-transform:uppercase; margin-top:4px; }
+#panelClose { position:absolute; top:12px; right:12px; background:transparent; border:none; color:rgba(160,216,240,0.4); font-size:18px; cursor:pointer; font-family:'Courier New',monospace; }
+#panelClose:hover { color:#4fc3f7; }
+
+/* Time + platform filters */
+#panelFilters { padding:8px 16px; display:flex; gap:4px; flex-wrap:wrap; flex-shrink:0; }
+.filterBtn { background:transparent; border:1px solid rgba(79,195,247,0.2); color:rgba(160,216,240,0.4); font-family:'Courier New',monospace; font-size:8px; letter-spacing:0.12em; padding:5px 10px; cursor:pointer; text-transform:uppercase; }
+.filterBtn.active { border-color:#4fc3f7; color:#4fc3f7; }
+.filterBtn:hover { border-color:rgba(79,195,247,0.5); color:rgba(160,216,240,0.6); }
+.filterSep { width:100%; height:0; }
+
+/* Scores list */
+#panelScores { flex:1; overflow-y:auto; padding:8px 16px; scrollbar-width:thin; scrollbar-color:rgba(79,195,247,0.3) transparent; }
+#panelScores::-webkit-scrollbar { width:4px; }
+#panelScores::-webkit-scrollbar-track { background:transparent; }
+#panelScores::-webkit-scrollbar-thumb { background:rgba(79,195,247,0.3); border-radius:2px; }
+
+.scoreRow { display:flex; align-items:center; padding:6px 0; border-bottom:1px solid rgba(79,195,247,0.05); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; }
+.scoreRank { width:28px; color:rgba(160,216,240,0.3); font-size:10px; }
+.scoreFlag { width:22px; font-size:14px; text-align:center; flex-shrink:0; }
+.scoreName { flex:1; color:#4fc3f7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.scoreVal { color:#ffe566; font-weight:700; min-width:30px; text-align:right; }
+.scoreRow.you .scoreName { color:#ff6b9d; }
+.scoreRow.you .scoreVal { color:#ff6b9d; }
+
+/* Medal SVGs */
+.medal { display:inline-block; width:18px; height:18px; vertical-align:middle; margin-right:2px; }
+
+.noData { text-align:center; padding:40px 16px; font-size:10px; opacity:0.3; letter-spacing:0.15em; text-transform:uppercase; }
+
+/* Hover tooltip */
+.countryTooltip { background:rgba(0,0,0,0.9) !important; border:1px solid rgba(79,195,247,0.3) !important; color:#a0d8f0 !important; font-family:'Courier New',monospace !important; font-size:11px !important; letter-spacing:0.08em !important; padding:6px 10px !important; border-radius:0 !important; box-shadow:0 0 12px rgba(79,195,247,0.2) !important; }
+
+/* Mobile: panel slides up from bottom */
+@media (max-width: 700px) {
+  #panel { top:auto; bottom:0; left:0; right:0; width:100%; height:55%; transform:translateY(100%); border-left:none; border-top:1px solid rgba(79,195,247,0.12); border-radius:0; }
+  #panel.open { transform:translateY(0); }
+}
+
+/* Loading spinner */
+.spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(79,195,247,0.2); border-top-color:#4fc3f7; border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="topBar">
+  <a class="backBtn" href="index.html">PLAY</a>
+  <span class="title">GLOBAL LEADERBOARD</span>
+  <button class="globalBtn active" id="globalToggle" onclick="toggleGlobal()">PLANET EARTH</button>
+</div>
+
+<div id="map"></div>
+
+<div id="panel">
+  <div id="panelHeader">
+    <button id="panelClose" onclick="closePanel()">&times;</button>
+    <div><span id="panelFlag"></span><span id="panelCountry">GLOBAL</span></div>
+    <div id="panelCount"></div>
+  </div>
+  <div id="panelFilters">
+    <button class="filterBtn active" data-time="24">24H</button>
+    <button class="filterBtn" data-time="168">7D</button>
+    <button class="filterBtn" data-time="0">ALL TIME</button>
+    <div class="filterSep"></div>
+    <button class="filterBtn active" data-plat="">ALL</button>
+    <button class="filterBtn" data-plat="mobile">MOBILE</button>
+    <button class="filterBtn" data-plat="desktop">DESKTOP</button>
+  </div>
+  <div id="panelScores"></div>
+</div>
+
+<script>
+(function() {
+  // ── Supabase (using existing project for now) ──
+  var sb = window.supabase.createClient(
+    'https://amyxocqdfcaeieerqllv.supabase.co',
+    'sb_publishable_uvng-9IdwolvuiCG9pQTIQ_1gyaKOVH'
+  );
+  var playerName = (localStorage.getItem('neuron_name') || '').toUpperCase();
+
+  // ── State ──
+  var selectedCountry = null; // null = global
+  var selectedISO = null;
+  var timeFilter = 24; // hours, 0 = all time
+  var platFilter = ''; // '' = all
+  var geoLayer = null;
+  var countryCounts = {}; // iso -> count
+
+  // ── Medal SVGs — neuron icons matching in-game leaderboard ──
+  function neuronSVG(color) {
+    return '<svg class="medal" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">' +
+      '<g fill="none" stroke="' + color + '" stroke-width="1.5" stroke-linecap="round">' +
+      '<ellipse cx="16" cy="16" rx="4" ry="4.5" fill="' + color + '" fill-opacity="0.25"/>' +
+      '<path d="M16 11.5 L14 7 L12.5 4"/><path d="M16 11.5 L18 6.5 L19.5 4"/>' +
+      '<path d="M14 7 L11.5 6"/><path d="M18 6.5 L20.5 5.5"/>' +
+      '<path d="M12 15 L7.5 13 L5 11.5"/><path d="M12 17 L8 18.5 L5.5 20"/>' +
+      '<path d="M7.5 13 L6 15"/>' +
+      '<path d="M20 15 L24 13.5 L27 12"/><path d="M20 17 L24.5 18 L27 19.5"/>' +
+      '<path d="M24 13.5 L25.5 15.5"/>' +
+      '<path d="M16 20.5 L16 26 L15 29" stroke-dasharray="2 1.5"/>' +
+      '</g></svg>';
+  }
+  var medals = {
+    1: neuronSVG('#ffd700'),  // gold
+    2: neuronSVG('#c0c0c0'),  // silver
+    3: neuronSVG('#cd7f32')   // bronze
+  };
+
+  // ── Country code to flag (HTML) ──
+  function flagHTML(iso, size) {
+    if (!iso || iso.length !== 2) return '';
+    size = size || 16;
+    if (iso === 'NS') return '<img src="/synaptica-flag-vF.jpg" style="height:' + size + 'px;vertical-align:middle;border-radius:2px;">';
+    var emoji = String.fromCodePoint(
+      0x1F1E6 + iso.charCodeAt(0) - 65,
+      0x1F1E6 + iso.charCodeAt(1) - 65
+    );
+    return '<span style="font-size:' + size + 'px;vertical-align:middle;">' + emoji + '</span>';
+  }
+  // Plain text flag for tooltip
+  function flag(iso) {
+    if (!iso || iso.length !== 2) return '';
+    if (iso === 'NS') return 'SYNAPTICA';
+    return String.fromCodePoint(
+      0x1F1E6 + iso.charCodeAt(0) - 65,
+      0x1F1E6 + iso.charCodeAt(1) - 65
+    );
+  }
+
+  // ── HTML escape ──
+  function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  // ── Initialize Leaflet map ──
+  var map = window._lmap = L.map('map', {
+    center: [20, 0],
+    zoom: 2,
+    minZoom: 2,
+    maxZoom: 6,
+    zoomControl: true,
+    attributionControl: false,
+    worldCopyJump: true
+  });
+
+  // Dark tile layer
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  // ── Style functions ──
+  function countryStyle(feature) {
+    var iso = feature.properties.iso;
+    var count = countryCounts[iso] || 0;
+    var isSelected = iso === selectedISO;
+    if (isSelected) {
+      return { fillColor: '#ffe566', fillOpacity: 0.35, color: '#ffe566', weight: 2, opacity: 0.9 };
+    }
+    if (count > 0) {
+      var intensity = Math.min(0.5, 0.08 + count * 0.02);
+      return { fillColor: '#4fc3f7', fillOpacity: intensity, color: '#4fc3f7', weight: 1, opacity: 0.4 };
+    }
+    return { fillColor: '#1a1a2e', fillOpacity: 0.3, color: 'rgba(79,195,247,0.15)', weight: 0.5, opacity: 1 };
+  }
+
+  function highlightStyle(e) {
+    var layer = e.target;
+    if (layer.feature.properties.iso === selectedISO) return;
+    layer.setStyle({ fillColor: '#4fc3f7', fillOpacity: 0.25, color: '#4fc3f7', weight: 1.5, opacity: 0.7 });
+  }
+
+  function resetStyle(e) {
+    if (geoLayer) geoLayer.resetStyle(e.target);
+  }
+
+  // ── Load GeoJSON ──
+  fetch('assets/countries.geojson')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      geoLayer = L.geoJSON(data, {
+        style: countryStyle,
+        onEachFeature: function(feature, layer) {
+          var name = feature.properties.name;
+          var iso = feature.properties.iso;
+          layer.bindTooltip(
+            '<b>' + flag(iso) + ' ' + name + '</b>',
+            { className: 'countryTooltip', sticky: true, direction: 'top', offset: [0, -10] }
+          );
+          layer.on({
+            mouseover: highlightStyle,
+            mouseout: resetStyle,
+            click: function() { selectCountry(iso, name); }
+          });
+        }
+      }).addTo(map);
+
+      // Fetch initial counts and load global
+      fetchCountryCounts();
+      openPanel(null, null, 'PLANET EARTH');
+    });
+
+  // ── Fetch player counts per country ──
+  function fetchCountryCounts() {
+    sb.from('neuron_snake_leaderboard')
+      .select('country_code')
+      .not('country_code', 'is', null)
+      .then(function(res) {
+        countryCounts = {};
+        if (res.data) {
+          for (var i = 0; i < res.data.length; i++) {
+            var cc = res.data[i].country_code;
+            countryCounts[cc] = (countryCounts[cc] || 0) + 1;
+          }
+        }
+        if (geoLayer) geoLayer.setStyle(countryStyle);
+      });
+  }
+
+  // ── Select a country ──
+  function selectCountry(iso, name) {
+    selectedISO = iso;
+    selectedCountry = name;
+    if (geoLayer) geoLayer.setStyle(countryStyle);
+    document.getElementById('globalToggle').classList.remove('active');
+    openPanel(iso, flag(iso), name);
+  }
+
+  // ── Toggle global (Planet Earth) ──
+  window.toggleGlobal = function() {
+    selectedISO = null;
+    selectedCountry = null;
+    if (geoLayer) geoLayer.setStyle(countryStyle);
+    document.getElementById('globalToggle').classList.add('active');
+    openPanel(null, null, 'PLANET EARTH');
+  };
+
+  // ── Open panel ──
+  function openPanel(iso, flagEmoji, name) {
+    var panel = document.getElementById('panel');
+    document.getElementById('panelFlag').innerHTML = iso ? flagHTML(iso, 36) : '';
+    document.getElementById('panelCountry').textContent = name || 'PLANET EARTH';
+    panel.classList.add('open');
+    // Synaptica: lock to all time, disable time filters
+    var isSynaptica = (iso === 'NS');
+    var timeBtns = document.querySelectorAll('.filterBtn[data-time]');
+    for (var i = 0; i < timeBtns.length; i++) {
+      timeBtns[i].disabled = isSynaptica;
+      timeBtns[i].style.opacity = isSynaptica ? '0.2' : '';
+      timeBtns[i].style.pointerEvents = isSynaptica ? 'none' : '';
+    }
+    if (isSynaptica) {
+      timeFilter = 0; // all time
+      for (var i = 0; i < timeBtns.length; i++) timeBtns[i].classList.remove('active');
+      var allTimeBtn = document.querySelector('.filterBtn[data-time="0"]');
+      if (allTimeBtn) allTimeBtn.classList.add('active');
+    }
+    fetchScores(iso);
+  }
+
+  // ── Close panel ──
+  window.closePanel = function() {
+    document.getElementById('panel').classList.remove('open');
+    selectedISO = null;
+    selectedCountry = null;
+    if (geoLayer) geoLayer.setStyle(countryStyle);
+    document.getElementById('globalToggle').classList.add('active');
+  };
+
+  // ── Filter buttons ──
+  document.getElementById('panelFilters').addEventListener('click', function(e) {
+    var btn = e.target;
+    if (!btn.classList.contains('filterBtn')) return;
+
+    if (btn.dataset.time !== undefined) {
+      timeFilter = parseInt(btn.dataset.time) || 0;
+      var timeBtns = document.querySelectorAll('.filterBtn[data-time]');
+      for (var i = 0; i < timeBtns.length; i++) timeBtns[i].classList.remove('active');
+      btn.classList.add('active');
+    }
+    if (btn.dataset.plat !== undefined) {
+      platFilter = btn.dataset.plat;
+      var platBtns = document.querySelectorAll('.filterBtn[data-plat]');
+      for (var i = 0; i < platBtns.length; i++) platBtns[i].classList.remove('active');
+      btn.classList.add('active');
+    }
+
+    fetchScores(selectedISO);
+  });
+
+  // ── Fetch scores ──
+  function fetchScores(countryISO) {
+    var scoresEl = document.getElementById('panelScores');
+    scoresEl.innerHTML = '<div class="noData"><div class="spinner"></div></div>';
+
+    var isSynaptica = (countryISO === 'NS');
+    var isMobilePlat = platFilter === 'mobile' || (!platFilter && /Mobi|Android/i.test(navigator.userAgent));
+    var minScore = isSynaptica ? (isMobilePlat ? 5 : 10) : 0;
+
+    function buildQuery(fields) {
+      var query = sb.from('neuron_snake_leaderboard')
+        .select(fields)
+        .order('score', { ascending: false })
+        .limit(isSynaptica ? 200 : 25)
+        .gt('score', minScore);
+      if (platFilter) query = query.eq('platform', platFilter);
+      if (timeFilter > 0) {
+        var since = new Date(Date.now() - timeFilter * 3600000).toISOString();
+        query = query.gte('created_at', since);
+      }
+      if (countryISO) query = query.eq('country_code', countryISO);
+      return query;
+    }
+
+    function handleResults(res) {
+      if (!res || res.error || !res.data || res.data.length === 0) {
+        scoresEl.innerHTML = '<div class="noData">NO SCORES YET</div>';
+        document.getElementById('panelCount').textContent = '0 players';
+        return;
+      }
+      document.getElementById('panelCount').textContent = res.data.length + (isSynaptica ? ' champions (score > ' + minScore + ')' : ' players');
+      var html = '';
+      for (var i = 0; i < res.data.length; i++) {
+        var r = res.data[i];
+        var rank = i + 1;
+        var medalHTML = medals[rank] || (rank + '.');
+        var isYou = r.name && r.name.toUpperCase() === playerName;
+        var countryFlag = r.country_code ? flagHTML(r.country_code, 14) : '';
+        html += '<div class="scoreRow' + (isYou ? ' you' : '') + '">';
+        html += '<span class="scoreRank">' + medalHTML + '</span>';
+        html += '<span class="scoreFlag">' + countryFlag + '</span>';
+        html += '<span class="scoreName">' + esc(r.name || 'ANON') + '</span>';
+        html += '<span class="scoreVal">' + r.score + '</span>';
+        html += '</div>';
+      }
+      scoresEl.innerHTML = html;
+    }
+
+    // Try with country_code, fall back to without
+    buildQuery('name,score,country_code').then(function(res) {
+      if (res.error) {
+        // country_code column doesn't exist yet — retry without it
+        buildQuery('name,score').then(function(res2) { handleResults(res2); });
+      } else {
+        handleResults(res);
+      }
+    }).catch(function() {
+      scoresEl.innerHTML = '<div class="noData">FAILED TO LOAD</div>';
+    });
+  }
+
+  // ── Keyboard shortcut: Escape closes panel ──
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closePanel();
+  });
+})();
+</script>
+</body>
+</html>

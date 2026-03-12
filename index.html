@@ -173,7 +173,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 <div id="lobbyStats"></div>
 <a id="snakeBadge" href="https://pump.fun/coin/8e5kbfG3uFDwLEL6WCeJ9P53DDjh2W4Ls4H1EEMBpump" target="_blank" rel="noopener">powered by <span class="snakeTicker">$SNAKE</span></a>
 <canvas id="snakeCanvas"></canvas>
-<div id="feedbackWidget" style="position:fixed;bottom:10px;right:10px;z-index:22;">
+<div id="feedbackWidget" style="position:fixed;bottom:10px;right:10px;z-index:22;display:none;">
   <button id="feedbackToggle" title="Send feedback" style="width:32px;height:32px;border:1px solid rgba(160,216,240,0.15);background:rgba(0,0,0,0.5);color:rgba(160,216,240,0.35);font-size:16px;cursor:pointer;border-radius:50%;font-family:'Courier New',monospace;transition:border-color 0.3s,color 0.3s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.borderColor='rgba(79,195,247,0.6)';this.style.color='#4fc3f7'" onmouseout="this.style.borderColor='rgba(160,216,240,0.15)';this.style.color='rgba(160,216,240,0.35)'">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
   </button>
@@ -714,14 +714,15 @@ function runGame() {
     somaGX = Math.floor(COLS / 2);
     somaGY = Math.floor(ROWS / 2);
 
-    // Block soma area (but NOT the center itself — branches start there)
+    // Block soma area shaped like the visual pyramid (not a circle)
+    // Pyramid: apex at ~(0,-2), base corners at ~(±2, +2), narrows toward top
     var dy, dx;
-    for (dy = -4; dy <= 4; dy++) {
-      for (dx = -4; dx <= 4; dx++) {
+    for (dy = -3; dy <= 3; dy++) {
+      // Width narrows toward apex: at dy=-3 width=0, at dy=+3 width=±2.5
+      var halfW = Math.max(0, Math.floor(1.0 + (dy + 3) * 0.42));
+      for (dx = -halfW; dx <= halfW; dx++) {
         if (dx === 0 && dy === 0) continue; // center stays open for branch origins
-        if (dx*dx + dy*dy <= 20) {
-          occupied[cellKey(somaGX+dx, somaGY+dy)] = true;
-        }
+        occupied[cellKey(somaGX+dx, somaGY+dy)] = true;
       }
     }
 
@@ -868,9 +869,12 @@ function runGame() {
   function isOnExistingPath(x, y) {
     // Soma center
     if (x === somaGX && y === somaGY) return true;
-    // Soma body cells
+    // Soma body cells (pyramid shape matching initGame blocked area)
     var ddx = x - somaGX, ddy = y - somaGY;
-    if (ddx * ddx + ddy * ddy <= 20) return true;
+    if (ddy >= -3 && ddy <= 3) {
+      var halfW = Math.max(0, Math.floor(1.0 + (ddy + 3) * 0.42));
+      if (Math.abs(ddx) <= halfW) return true;
+    }
     // Axon cells
     for (var ai = 0; ai < axonPts.length; ai++) {
       if (axonPts[ai].x === x && axonPts[ai].y === y) return true;
@@ -1713,6 +1717,7 @@ function runGame() {
       gl.addEventListener('animationend', function() { gl.style.animation = ''; }, {once: true});
     }
     document.getElementById('countryLbLink').style.display = 'inline-block';
+    document.getElementById('feedbackWidget').style.display = '';
     document.getElementById('lobbyStats').style.display = 'none';
     overlay.style.display = 'flex';
     fetchGlobalCount(); // Refresh counter between games
@@ -2044,8 +2049,8 @@ function runGame() {
   }
 
   function doShare(platform) {
-    var APP_URL = 'https://neuronsnake.com';
-    var shareText = 'I grew ' + score + ' synapses in NEURON \uD83E\uDDE0\u26A1 Play: ' + APP_URL;
+    var APP_URL = 'https://neuronsnake.com?challenge=' + score;
+    var shareText = 'I grew ' + score + ' synapses in NEURON \uD83E\uDDE0\u26A1 Can you beat me? ' + APP_URL;
     var encodedText = encodeURIComponent(shareText);
     var encodedUrl = encodeURIComponent(APP_URL);
 
@@ -2097,6 +2102,16 @@ function runGame() {
     var li = document.getElementById('lobbyInfo');
     if (li) li.innerHTML += '<br><br>TAP where you want to turn';
   }
+  // Challenge mode: ?challenge=N shows a target score on the lobby
+  var challengeMatch = location.search.match(/challenge=(\d+)/);
+  if (challengeMatch) {
+    var challengeScore = parseInt(challengeMatch[1], 10);
+    if (challengeScore > 0) {
+      var li = document.getElementById('lobbyInfo');
+      if (li) li.innerHTML = '<div style="font-size:14px;color:#ffe566;font-weight:900;letter-spacing:0.1em;margin-bottom:8px;">\u26A1 CHALLENGE: BEAT ' + challengeScore + ' SYNAPSES \u26A1</div>' + li.innerHTML;
+    }
+  }
+
   fetchGlobalCount();
   updateLobbyStats();
 

@@ -48,15 +48,18 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 /* Legend panel */
 #legendBtn { background:transparent; border:1px solid rgba(79,195,247,0.3); color:#4fc3f7; font-family:'Courier New',monospace; font-size:12px; font-weight:700; width:28px; height:28px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
 #legendBtn:hover { border-color:#4fc3f7; background:rgba(79,195,247,0.1); }
-#legendPanel { position:fixed; top:48px; right:0; width:280px; max-height:calc(100vh - 48px); overflow-y:auto; background:rgba(0,0,0,0.94); border-left:1px solid rgba(79,195,247,0.15); border-bottom:1px solid rgba(79,195,247,0.15); z-index:150; display:none; padding:16px; }
+#legendPanel { position:fixed; top:48px; right:0; width:320px; max-height:calc(100vh - 48px); overflow-y:auto; background:rgba(0,0,0,0.94); border-left:1px solid rgba(79,195,247,0.15); border-bottom:1px solid rgba(79,195,247,0.15); z-index:150; display:none; padding:18px 20px; scrollbar-width:thin; scrollbar-color:rgba(79,195,247,0.3) transparent; }
+#legendPanel::-webkit-scrollbar { width:6px; }
+#legendPanel::-webkit-scrollbar-track { background:transparent; }
+#legendPanel::-webkit-scrollbar-thumb { background:rgba(79,195,247,0.3); border-radius:3px; }
 #legendPanel.open { display:block; }
-#legendPanel .legTitle { font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:#4fc3f7; font-weight:700; margin-bottom:12px; }
-#legendPanel .legItem { margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid rgba(79,195,247,0.06); }
+#legendPanel .legTitle { font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#4fc3f7; font-weight:700; margin-bottom:14px; }
+#legendPanel .legItem { margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid rgba(79,195,247,0.06); }
 #legendPanel .legItem:last-child { border-bottom:none; margin-bottom:0; padding-bottom:0; }
-#legendPanel .legDot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:middle; }
-#legendPanel .legName { font-size:10px; letter-spacing:0.12em; text-transform:uppercase; font-weight:700; }
-#legendPanel .legUnlock { font-size:8px; letter-spacing:0.08em; text-transform:uppercase; opacity:0.3; margin-left:6px; }
-#legendPanel .legDesc { font-size:9px; line-height:1.5; letter-spacing:0.04em; opacity:0.6; margin-top:4px; text-transform:none; }
+#legendPanel .legDot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px; vertical-align:middle; }
+#legendPanel .legName { font-size:13px; letter-spacing:0.12em; text-transform:uppercase; font-weight:700; }
+#legendPanel .legUnlock { font-size:10px; letter-spacing:0.08em; text-transform:uppercase; opacity:0.35; margin-left:6px; }
+#legendPanel .legDesc { font-size:12px; line-height:1.6; letter-spacing:0.03em; opacity:0.65; margin-top:5px; text-transform:none; }
 #legendPanel .legLocked { opacity:0.25; }
 
 /* Loading */

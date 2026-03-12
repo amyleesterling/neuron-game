@@ -139,7 +139,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
   </div>
 </div>
 
-<button id="muteBtn" onclick="toggleMute()" style="position:fixed;bottom:12px;right:12px;background:rgba(0,0,0,0.5);border:1px solid rgba(79,195,247,0.3);border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;z-index:9000;display:flex;align-items:center;justify-content:center;padding:0;transition:opacity 0.2s;opacity:0.5;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.5'">🔊</button>
+<button id="muteBtn" style="position:fixed;bottom:12px;right:12px;background:rgba(0,0,0,0.5);border:1px solid rgba(79,195,247,0.3);border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;z-index:9000;display:flex;align-items:center;justify-content:center;padding:0;transition:opacity 0.2s;opacity:0.5;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.5'">🔊</button>
 <canvas id="gameCanvas"></canvas>
 <div id="errBox"></div>
 
@@ -2701,8 +2701,12 @@ function runGame() {
     requestAnimationFrame(loop);
   }
 
-  // Set initial mute button state
-  if (audioMuted) { var mb = document.getElementById('muteBtn'); if (mb) mb.textContent = '🔇'; }
+  // Set initial mute button state and bind click
+  var mb = document.getElementById('muteBtn');
+  if (mb) {
+    if (audioMuted) mb.textContent = '🔇';
+    mb.addEventListener('click', toggleMute);
+  }
 
   // Button click SFX — delegated to all buttons/links
   document.addEventListener('click', function(e) {

@@ -111,10 +111,11 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 
 <script>
 (function() {
-  // ── Supabase (gallery project) ──
-  var SUPABASE_URL = 'https://javthknksdcrlhiaaptj.supabase.co';
-  var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphdnRoa25rc2RjcmxoaWFhcHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2MzUyOTIsImV4cCI6MjA4ODIxMTI5Mn0.APdwuQ-uudyHISBr7Dj6HTylO7qavJ0HhB32E5X434g';
-  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  // ── Supabase ──
+  var sb = supabase.createClient(
+    'https://amyxocqdfcaeieerqllv.supabase.co',
+    'sb_publishable_uvng-9IdwolvuiCG9pQTIQ_1gyaKOVH'
+  );
 
   // ── Custom SVG animal icons (themed cyan/teal on dark bg) ──
   var ANIMAL_SVGS = {
@@ -384,18 +385,48 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
   var hoveredNode = -1;
   var autoFireTimer = null;
 
-  // ── Fetch data ──
-  sb.from('neuron_gallery')
-    .select('name, score, branches, soma_x, soma_y, axon_pts, cols, rows, created_at')
-    .order('score', { ascending: false })
-    .then(function(res) {
-      if (res.error || !res.data || !res.data.length) {
-        document.querySelector('#loading .loadText').textContent = 'NO NEURONS FOUND';
-        return;
+  // ── Fetch data from both sources and merge ──
+  Promise.all([
+    sb.from('neuron_gallery')
+      .select('name, score, branches, soma_x, soma_y, axon_pts, cols, rows, created_at')
+      .order('score', { ascending: false }),
+    sb.from('neuron_snake_leaderboard')
+      .select('name, score, created_at')
+      .gt('score', 0)
+      .order('score', { ascending: false })
+  ]).then(function(results) {
+    var galleryRes = results[0];
+    var lbRes = results[1];
+    var galleryData = (galleryRes.data || []);
+    var lbData = (lbRes.data || []);
+
+    // Build lookup of gallery entries by name+score for dedup
+    var galleryKeys = {};
+    for (var i = 0; i < galleryData.length; i++) {
+      galleryData[i]._hasShape = true;
+      galleryKeys[galleryData[i].name + '|' + galleryData[i].score] = true;
+    }
+
+    // Add leaderboard entries that aren't already in gallery
+    var merged = galleryData.slice();
+    for (var j = 0; j < lbData.length; j++) {
+      var key = lbData[j].name + '|' + lbData[j].score;
+      if (!galleryKeys[key]) {
+        lbData[j]._hasShape = false;
+        merged.push(lbData[j]);
       }
-      initNetwork(res.data);
-      document.getElementById('loading').style.display = 'none';
-    });
+    }
+
+    // Sort by score descending
+    merged.sort(function(a, b) { return (b.score || 0) - (a.score || 0); });
+
+    if (!merged.length) {
+      document.querySelector('#loading .loadText').textContent = 'NO NEURONS FOUND';
+      return;
+    }
+    initNetwork(merged);
+    document.getElementById('loading').style.display = 'none';
+  });
 
   function initNetwork(data) {
     // Build nodes
@@ -421,12 +452,12 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
     buildEdges();
 
     // Update stats
-    document.getElementById('neuronCount').textContent = nodes.length;
+    var neuronCount = nodes.length;
+    document.getElementById('neuronCount').textContent = neuronCount;
     document.getElementById('synapseCount').textContent = totalSynapses.toLocaleString();
     document.getElementById('popCount').textContent = getActivePopulations(neuronCount).length + '/' + POPULATIONS.length;
 
     // Animal tier (based on neuron count = number of players)
-    var neuronCount = nodes.length;
     currentTier = getAnimalTier(neuronCount);
     document.getElementById('badgeIcon').innerHTML = animalSVG(currentTier.iconId, 22);
     document.getElementById('badgeText').textContent = 'AS SMART AS A ' + currentTier.name.toUpperCase();
@@ -618,6 +649,17 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
     var oc = document.createElement('canvas');
     oc.width = size; oc.height = size;
     var ctx = oc.getContext('2d');
+
+    // Leaderboard-only entries: render as a glowing soma circle
+    if (!data._hasShape) {
+      var cx = size / 2, cy = size / 2, r = size * 0.35;
+      var fg = ctx.createRadialGradient(cx, cy - r * 0.1, 0, cx, cy, r);
+      fg.addColorStop(0, 'rgba(140,220,255,1)');
+      fg.addColorStop(0.4, 'rgba(40,130,220,1)');
+      fg.addColorStop(1, 'rgba(4,20,70,1)');
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = fg; ctx.fill();
+      return oc;
+    }
 
     var cols = data.cols || 48;
     var rows = data.rows || 48;

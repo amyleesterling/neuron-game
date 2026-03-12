@@ -455,8 +455,12 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
     // Render static
     renderStatic();
 
-    // Start animation — fire immediately on load, then continue auto-firing
-    if (nodes.length > 0) fireNode(pickFromPopulation('sensors'), 1.0);
+    // Start animation — burst of fires on load for immediate life
+    if (nodes.length > 0) {
+      fireNode(pickFromPopulation('sensors'), 1.0);
+      setTimeout(function() { fireNode(pickFromPopulation(null), 0.8); }, 300);
+      setTimeout(function() { fireNode(pickFromPopulation(null), 0.9); }, 700);
+    }
     startAutoFire();
     requestAnimationFrame(animLoop);
   }
@@ -841,36 +845,41 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 
   function startAutoFire() {
     if (autoFireTimer) clearTimeout(autoFireTimer);
+    // Ambient burst: fire 1-3 nodes each cycle for a livelier network
     function doFire() {
       if (nodes.length === 0) return;
 
-      // Tier-aware firing patterns
-      var hasPopulations = nodes[0] && nodes[0].population;
-      if (hasPopulations) {
-        var pattern = Math.random();
-        if (pattern < 0.4) {
-          // Sensory→motor cascade: fire a sensory neuron
-          fireNode(pickFromPopulation('sensors'), 1.0);
-        } else if (pattern < 0.6 && currentTier.min >= 18000) {
-          // Memory replay: fire a memory neuron (sea slug+)
-          fireNode(pickFromPopulation('memory'), 1.0);
-        } else if (pattern < 0.75 && currentTier.min >= 5600) {
-          // Relay pulse: fire from relays (jellyfish+)
-          fireNode(pickFromPopulation('relays'), 1.0);
-        } else {
-          // Random weighted fire
-          fireNode(pickFromPopulation(null), 1.0);
-        }
-      } else {
-        // No populations — random weighted fire
-        fireNode(pickFromPopulation(null), 1.0);
+      var burstCount = 1 + Math.floor(Math.random() * 3); // 1-3 simultaneous fires
+      for (var b = 0; b < burstCount; b++) {
+        var delay = b * (200 + Math.random() * 400); // stagger by 200-600ms
+        (function(d) {
+          setTimeout(function() {
+            var hasPopulations = nodes[0] && nodes[0].population;
+            if (hasPopulations) {
+              var pattern = Math.random();
+              if (pattern < 0.35) {
+                fireNode(pickFromPopulation('sensors'), 0.7 + Math.random() * 0.3);
+              } else if (pattern < 0.5 && currentTier.min >= 18000) {
+                fireNode(pickFromPopulation('memory'), 0.7 + Math.random() * 0.3);
+              } else if (pattern < 0.65 && currentTier.min >= 5600) {
+                fireNode(pickFromPopulation('relays'), 0.7 + Math.random() * 0.3);
+              } else {
+                fireNode(pickFromPopulation(null), 0.6 + Math.random() * 0.4);
+              }
+            } else {
+              fireNode(pickFromPopulation(null), 0.6 + Math.random() * 0.4);
+            }
+          }, d);
+        })(delay);
       }
 
-      var jitter = (Math.random() - 0.5) * currentTier.fireInterval * 0.4;
-      autoFireTimer = setTimeout(doFire, currentTier.fireInterval + jitter);
+      // Base interval ~60% of tier interval for more activity, with jitter
+      var baseInterval = currentTier.fireInterval * 0.6;
+      var jitter = (Math.random() - 0.5) * baseInterval * 0.5;
+      autoFireTimer = setTimeout(doFire, baseInterval + jitter);
     }
-    var jitter = (Math.random() - 0.5) * currentTier.fireInterval * 0.4;
-    autoFireTimer = setTimeout(doFire, currentTier.fireInterval + jitter);
+    var jitter = (Math.random() - 0.5) * currentTier.fireInterval * 0.3;
+    autoFireTimer = setTimeout(doFire, currentTier.fireInterval * 0.4 + jitter);
   }
 
   // ── Animation loop ──

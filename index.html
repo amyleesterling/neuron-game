@@ -139,24 +139,40 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 </head>
 <body>
 
-<div id="announceBanner" style="display:none;" onclick="window.open('leaderboard.html','_blank')">
-  <span class="bannerEmoji">🪐</span>
-  <span class="bannerText">Thanks for playing! Check out the updates to Global Leaderboard</span>
+<div id="announceBanner" style="display:none;" onclick="window.open('brain.html','_blank')">
+  <span class="bannerEmoji">🧠</span>
+  <span class="bannerText">NEW: The Hive Mind is live — see every neuron connected</span>
   <button class="bannerClose" onclick="event.stopPropagation(); dismissBanner();">&times;</button>
 </div>
 <script>
 (function() {
-  var KEY = 'announce_leaderboard_v1';
+  var KEY = 'announce_hivemind_v1';
   var now = Date.now();
   var stored = localStorage.getItem(KEY);
   if (stored === 'dismissed') return;
   if (stored && now - Number(stored) > 72 * 60 * 60 * 1000) { localStorage.setItem(KEY, 'dismissed'); return; }
   if (!stored) localStorage.setItem(KEY, String(now));
-  document.getElementById('announceBanner').style.display = 'flex';
+  var b = document.getElementById('announceBanner');
+  b.style.display = 'flex';
+  // Swipe up to dismiss on mobile
+  var startY = 0, dy = 0;
+  b.addEventListener('touchstart', function(e) { startY = e.touches[0].clientY; dy = 0; }, { passive: true });
+  b.addEventListener('touchmove', function(e) {
+    dy = e.touches[0].clientY - startY;
+    if (dy < 0) b.style.transform = 'translateY(' + dy + 'px)';
+  }, { passive: true });
+  b.addEventListener('touchend', function(e) {
+    if (dy < -30) { dismissBanner(); }
+    else { b.style.transform = ''; }
+  });
 })();
 function dismissBanner() {
-  localStorage.setItem('announce_leaderboard_v1', 'dismissed');
-  document.getElementById('announceBanner').style.display = 'none';
+  localStorage.setItem('announce_hivemind_v1', 'dismissed');
+  var b = document.getElementById('announceBanner');
+  b.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+  b.style.transform = 'translateY(-100%)';
+  b.style.opacity = '0';
+  setTimeout(function() { b.style.display = 'none'; }, 300);
 }
 </script>
 
@@ -2390,7 +2406,7 @@ function runGame() {
     mainBtn.style.fontSize = '14px';
     var gl = document.getElementById('galleryLink');
     gl.style.display = 'inline-block';
-    if (score >= 5) {
+    if (score >= 2) {
       gl.style.animation = 'galleryGlow 1.5s ease-in-out 3';
       gl.addEventListener('animationend', function() { gl.style.animation = ''; }, {once: true});
     }
@@ -2484,7 +2500,7 @@ function runGame() {
       }
       submitted = true;
       // Save neuron to gallery ONCE per game (synchronous flag before any async)
-      if (score >= 5 && frozenBranches.length > 0 && !gallerySaved) {
+      if (score >= 2 && frozenBranches.length > 0 && !gallerySaved) {
         gallerySaved = true;
         sfx('gallery');
         var galleryData = {

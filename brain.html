@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>THE HIVE MIND — NEURON</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; background:#000; overflow:hidden; font-family:'Courier New',monospace; color:#a0d8f0; -webkit-user-select:none; user-select:none; }
+
+/* Top bar */
+#topBar { position:fixed; top:0; left:0; right:0; height:48px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; background:rgba(0,0,0,0.88); z-index:100; border-bottom:1px solid rgba(79,195,247,0.15); }
+#topBar .title { font-size:14px; font-weight:900; letter-spacing:0.2em; color:#4fc3f7; text-transform:uppercase; }
+#topBar .navLinks { display:flex; gap:6px; }
+#topBar .backBtn { background:transparent; border:1px solid rgba(79,195,247,0.3); color:#4fc3f7; font-family:'Courier New',monospace; font-size:10px; letter-spacing:0.15em; padding:6px 14px; cursor:pointer; text-transform:uppercase; text-decoration:none; }
+#topBar .backBtn:hover { border-color:#4fc3f7; background:rgba(79,195,247,0.1); }
+
+/* Stats bar */
+#statsBar { position:fixed; top:48px; left:0; right:0; height:32px; display:flex; align-items:center; justify-content:center; gap:24px; background:rgba(0,0,0,0.8); z-index:99; border-bottom:1px solid rgba(79,195,247,0.08); }
+.hiveStat { font-size:9px; letter-spacing:0.12em; text-transform:uppercase; opacity:0.6; }
+.hiveStat .hsNum { color:#ffe566; font-weight:700; font-size:11px; margin-right:3px; }
+
+/* Animal badge */
+#animalBadge { position:fixed; top:80px; left:0; right:0; height:36px; display:flex; align-items:center; justify-content:center; gap:8px; z-index:98; }
+#animalBadge .badgeIcon { font-size:18px; }
+#animalBadge .badgeText { font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:#ffe566; font-weight:700; }
+#animalBadge .badgeBehavior { font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:#ff6b9d; margin-left:4px; }
+#progressWrap { position:fixed; top:116px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:10px; z-index:98; }
+#progressWrap .progLabel { font-size:10px; letter-spacing:0.1em; text-transform:uppercase; opacity:0.55; }
+#progressWrap .progLabel .progNum { color:#ffe566; font-weight:700; }
+#progressBar { width:140px; height:4px; background:rgba(79,195,247,0.12); border-radius:2px; overflow:hidden; }
+#progressBar .progFill { height:100%; background:linear-gradient(90deg, #4fc3f7, #ffe566); transition:width 0.5s ease; }
+
+/* Canvases */
+#bgCanvas, #fxCanvas { position:fixed; top:0; left:0; }
+#bgCanvas { z-index:1; }
+#fxCanvas { z-index:2; cursor:crosshair; }
+
+/* Tooltip */
+#tooltip { position:fixed; pointer-events:none; z-index:200; background:rgba(0,0,0,0.92); border:1px solid rgba(79,195,247,0.3); padding:10px 14px; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; display:none; max-width:220px; }
+#tooltip .ttName { color:#4fc3f7; font-weight:700; font-size:12px; margin-bottom:4px; }
+#tooltip .ttScore { color:#ffe566; }
+#tooltip .ttDate { opacity:0.4; margin-top:2px; }
+#tooltip .ttPop { margin-top:3px; font-weight:700; }
+#tooltip .ttFlag { margin-right:4px; }
+
+/* Legend panel */
+#legendBtn { background:transparent; border:1px solid rgba(79,195,247,0.3); color:#4fc3f7; font-family:'Courier New',monospace; font-size:12px; font-weight:700; width:28px; height:28px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+#legendBtn:hover { border-color:#4fc3f7; background:rgba(79,195,247,0.1); }
+#legendPanel { position:fixed; top:48px; right:0; width:280px; max-height:calc(100vh - 48px); overflow-y:auto; background:rgba(0,0,0,0.94); border-left:1px solid rgba(79,195,247,0.15); border-bottom:1px solid rgba(79,195,247,0.15); z-index:150; display:none; padding:16px; }
+#legendPanel.open { display:block; }
+#legendPanel .legTitle { font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:#4fc3f7; font-weight:700; margin-bottom:12px; }
+#legendPanel .legItem { margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid rgba(79,195,247,0.06); }
+#legendPanel .legItem:last-child { border-bottom:none; margin-bottom:0; padding-bottom:0; }
+#legendPanel .legDot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+#legendPanel .legName { font-size:10px; letter-spacing:0.12em; text-transform:uppercase; font-weight:700; }
+#legendPanel .legUnlock { font-size:8px; letter-spacing:0.08em; text-transform:uppercase; opacity:0.3; margin-left:6px; }
+#legendPanel .legDesc { font-size:9px; line-height:1.5; letter-spacing:0.04em; opacity:0.6; margin-top:4px; text-transform:none; }
+#legendPanel .legLocked { opacity:0.25; }
+
+/* Loading */
+#loading { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:300; background:#000; }
+#loading .loadText { font-size:11px; letter-spacing:0.2em; text-transform:uppercase; opacity:0.4; }
+</style>
+</head>
+<body>
+
+<div id="topBar">
+  <span class="title">THE HIVE MIND</span>
+  <div class="navLinks">
+    <a class="backBtn" href="/">PLAY</a>
+    <a class="backBtn" href="/gallery.html">GALLERY</a>
+    <a class="backBtn" href="/leaderboard.html">LEADERBOARD</a>
+    <button id="legendBtn" onclick="document.getElementById('legendPanel').classList.toggle('open')" title="Neural populations">?</button>
+  </div>
+</div>
+<div id="statsBar">
+  <span class="hiveStat"><span class="hsNum" id="neuronCount">--</span>NEURONS</span>
+  <span class="hiveStat"><span class="hsNum" id="synapseCount">--</span>TOTAL SYNAPSES</span>
+  <span class="hiveStat"><span class="hsNum" id="popCount">--</span>POPULATIONS</span>
+</div>
+<div id="animalBadge">
+  <span class="badgeIcon" id="badgeIcon">🧠</span>
+  <span class="badgeText" id="badgeText">LOADING...</span>
+</div>
+<div id="progressWrap" style="display:none;">
+  <span class="progLabel" id="progLabel"></span>
+  <div id="progressBar"><div class="progFill" id="progFill"></div></div>
+</div>
+
+<canvas id="bgCanvas"></canvas>
+<canvas id="fxCanvas"></canvas>
+
+<div id="tooltip">
+  <div><span class="ttFlag" id="ttFlag"></span><span class="ttName" id="ttName"></span></div>
+  <div class="ttScore" id="ttScore"></div>
+  <div class="ttPop" id="ttPop"></div>
+  <div class="ttDate" id="ttDate"></div>
+</div>
+
+<div id="legendPanel">
+  <div class="legTitle">NEURAL POPULATIONS</div>
+  <div id="legendItems"></div>
+</div>
+
+<div id="loading"><span class="loadText">CONNECTING TO HIVE MIND...</span></div>
+
+<script>
+(function() {
+  // ── Supabase (gallery project) ──
+  var SUPABASE_URL = 'https://javthknksdcrlhiaaptj.supabase.co';
+  var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphdnRoa25rc2RjcmxoaWFhcHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2MzUyOTIsImV4cCI6MjA4ODIxMTI5Mn0.APdwuQ-uudyHISBr7Dj6HTylO7qavJ0HhB32E5X434g';
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  // ── Custom SVG animal icons (themed cyan/teal on dark bg) ──
+  var ANIMAL_SVGS = {
+    sponge: function(s) {
+      s = s || 24;
+      return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="13" rx="7" ry="9" fill="#3a6a6a" opacity="0.6"/><ellipse cx="12" cy="13" rx="7" ry="9" stroke="#5fb8b8" stroke-width="1.2" fill="none"/><circle cx="9" cy="10" r="1.2" fill="#0a1a1a"/><circle cx="14" cy="9" r="1" fill="#0a1a1a"/><circle cx="11" cy="15" r="1.3" fill="#0a1a1a"/><circle cx="15" cy="14" r="0.9" fill="#0a1a1a"/><circle cx="8" cy="14" r="0.8" fill="#0a1a1a"/></svg>';
+    },
+    tardigrade: function(s) {
+      s = s || 24;
+      return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="12" rx="5" ry="4" fill="#3a6a6a" opacity="0.5"/><ellipse cx="12" cy="12" rx="5" ry="4" stroke="#5fb8b8" stroke-width="1.2" fill="none"/><line x1="7" y1="10" x2="4" y2="7" stroke="#5fb8b8" stroke-width="1" stroke-linecap="round"/><line x1="7" y1="14" x2="4" y2="17" stroke="#5fb8b8" stroke-width="1" stroke-linecap="round"/><line x1="9" y1="9" x2="7" y2="5" stroke="#5fb8b8" stroke-width="1" stroke-linecap="round"/><line x1="9" y1="15" x2="7" y2="19" stroke="#5fb8b8" stroke-width="1" stroke-linecap="round"/><line x1="15" y1="9" x2="17" y2="5" stroke="#5fb8b8" stroke-width="1" stroke-linecap="round"/><line x1="15" y1="15" x2="17" y2="19" stroke="#5fb8b8" stroke-width="1" stroke-linecap="round"/><line x1="17" y1="10" x2="20" y2="7" stroke="#5fb8b8" stroke-width="1" stroke-linecap="round"/><line x1="17" y1="14" x2="20" y2="17" stroke="#5fb8b8" stroke-width="1" stroke-linecap="round"/><circle cx="10" cy="11" r="0.7" fill="#a0e0e0"/><circle cx="14" cy="11" r="0.7" fill="#a0e0e0"/></svg>';
+    },
+    seasquirt: function(s) {
+      s = s || 24;
+      return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><path d="M10 22 C10 22 8 14 8 10 C8 5 10 3 12 3 C14 3 16 5 16 10 C16 14 14 22 14 22" stroke="#5fb8b8" stroke-width="1.2" fill="#3a6a6a" opacity="0.5"/><path d="M10 22 C10 22 8 14 8 10 C8 5 10 3 12 3 C14 3 16 5 16 10 C16 14 14 22 14 22" stroke="#5fb8b8" stroke-width="1.2" fill="none"/><ellipse cx="12" cy="4" rx="3" ry="1.5" stroke="#5fb8b8" stroke-width="0.8" fill="none"/><line x1="10" y1="3" x2="9" y2="1" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round"/><line x1="14" y1="3" x2="15" y2="1" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round"/></svg>';
+    },
+    roundworm: function(s) {
+      s = s || 24;
+      return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><path d="M4 16 C6 8, 10 6, 12 10 C14 14, 16 8, 20 6" stroke="#5fb8b8" stroke-width="1.8" stroke-linecap="round" fill="none"/><circle cx="20" cy="6" r="1.5" fill="#5fb8b8" opacity="0.6"/><circle cx="20" cy="6" r="1.5" stroke="#5fb8b8" stroke-width="0.8" fill="none"/></svg>';
+    },
+    hydra: function(s) {
+      s = s || 24;
+      return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="16" rx="3" ry="4" fill="#3a6a6a" opacity="0.5"/><ellipse cx="12" cy="16" rx="3" ry="4" stroke="#5fb8b8" stroke-width="1" fill="none"/><path d="M12 12 C12 8 8 4 6 2" stroke="#5fb8b8" stroke-width="1.2" stroke-linecap="round" fill="none"/><path d="M12 12 C11 7 14 3 16 1" stroke="#5fb8b8" stroke-width="1.2" stroke-linecap="round" fill="none"/><path d="M10 13 C7 10 4 10 2 9" stroke="#5fb8b8" stroke-width="1" stroke-linecap="round" fill="none"/><path d="M14 13 C17 10 20 10 22 9" stroke="#5fb8b8" stroke-width="1" stroke-linecap="round" fill="none"/><path d="M11 13 C9 9 5 7 3 5" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round" fill="none"/><path d="M13 13 C15 9 19 7 21 5" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round" fill="none"/><path d="M12 12 L12 4" stroke="#5fb8b8" stroke-width="1" stroke-linecap="round" fill="none"/><line x1="12" y1="20" x2="12" y2="23" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round"/></svg>';
+    },
+    jellyfish: function(s) {
+      s = s || 24;
+      return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><path d="M5 12 C5 6 8 3 12 3 C16 3 19 6 19 12" stroke="#5fb8b8" stroke-width="1.2" fill="#3a6a6a" opacity="0.5"/><path d="M5 12 C5 6 8 3 12 3 C16 3 19 6 19 12" stroke="#5fb8b8" stroke-width="1.2" fill="none"/><path d="M5 12 C7 14 9 12 10 14 C11 16 13 12 14 14 C15 16 17 14 19 12" stroke="#5fb8b8" stroke-width="0.8" fill="none"/><path d="M8 14 C7 17 8 20 7 22" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round" fill="none"/><path d="M12 14 C12 17 11 19 12 22" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round" fill="none"/><path d="M16 14 C17 17 16 20 17 22" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round" fill="none"/><path d="M10 15 C9 18 10 21 9 23" stroke="#5fb8b8" stroke-width="0.6" stroke-linecap="round" fill="none" opacity="0.5"/><path d="M14 15 C15 18 14 21 15 23" stroke="#5fb8b8" stroke-width="0.6" stroke-linecap="round" fill="none" opacity="0.5"/></svg>';
+    },
+    seaslug: function(s) {
+      s = s || 24;
+      return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="15" rx="8" ry="4" fill="#3a6a6a" opacity="0.5"/><ellipse cx="12" cy="15" rx="8" ry="4" stroke="#5fb8b8" stroke-width="1" fill="none"/><path d="M18 14 C20 13 21 11 20 10" stroke="#5fb8b8" stroke-width="1" stroke-linecap="round" fill="none"/><line x1="19" y1="12" x2="21" y2="9" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round"/><line x1="20" y1="13" x2="23" y2="11" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round"/><path d="M8 13 C7 10 8 8 10 7" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round" fill="none" opacity="0.6"/><path d="M10 13 C10 10 12 8 14 7" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round" fill="none" opacity="0.6"/><path d="M12 13 C13 11 15 9 17 8" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round" fill="none" opacity="0.6"/></svg>';
+    },
+    pondsnail: function(s) {
+      // Aquatic: tall pointed conical shell, thin elongated body, long thin tentacles, water ripples
+      s = s || 24;
+      return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><path d="M14 20 C9 20 6 19 6 17.5 C6 16 8 15.5 10 15.5" stroke="#5fb8b8" stroke-width="1" stroke-linecap="round" fill="none"/><path d="M10 15.5 C10 15.5 9 12 10 8 C11 4 13 2 14 2 C15 2 16 4 15.5 8 C15 12 14 15.5 14 15.5" fill="#3a6a6a" opacity="0.4"/><path d="M10 15.5 C10 15.5 9 12 10 8 C11 4 13 2 14 2 C15 2 16 4 15.5 8 C15 12 14 15.5 14 15.5" stroke="#5fb8b8" stroke-width="1.1" fill="none"/><path d="M12 5 C12 8 12.5 12 12 15" stroke="#5fb8b8" stroke-width="0.5" fill="none" opacity="0.4"/><line x1="7" y1="17" x2="4" y2="14" stroke="#5fb8b8" stroke-width="0.7" stroke-linecap="round"/><line x1="8" y1="16.5" x2="6" y2="13.5" stroke="#5fb8b8" stroke-width="0.7" stroke-linecap="round"/><circle cx="4" cy="14" r="0.5" fill="#a0e0e0"/><circle cx="6" cy="13.5" r="0.5" fill="#a0e0e0"/><path d="M4 21 C6 20.5 8 21 10 20.5" stroke="#5fb8b8" stroke-width="0.4" opacity="0.3" stroke-linecap="round"/><path d="M12 21.5 C14 21 16 21.5 18 21" stroke="#5fb8b8" stroke-width="0.4" opacity="0.3" stroke-linecap="round"/></svg>';
+    },
+    snail: function(s) {
+      // Classic land snail: side-view coiled shell sitting on visible muscular foot, short stalked eyes
+      s = s || 24;
+      return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><path d="M4 18 C4 18 3 16 4 15 C5 14 8 14 11 14" stroke="#5fb8b8" stroke-width="1.2" stroke-linecap="round" fill="none"/><path d="M4 18 L18 18" stroke="#5fb8b8" stroke-width="1" stroke-linecap="round"/><ellipse cx="14" cy="12" rx="6" ry="6" fill="#3a6a6a" opacity="0.4"/><ellipse cx="14" cy="12" rx="6" ry="6" stroke="#5fb8b8" stroke-width="1.2" fill="none"/><path d="M14 6 Q10 8 11 12 Q12 16 17 15" stroke="#5fb8b8" stroke-width="0.8" fill="none" opacity="0.5"/><path d="M15 8 Q13 10 14 13" stroke="#5fb8b8" stroke-width="0.6" fill="none" opacity="0.35"/><line x1="6" y1="15" x2="5" y2="10" stroke="#5fb8b8" stroke-width="0.9" stroke-linecap="round"/><line x1="8" y1="14.5" x2="7.5" y2="10" stroke="#5fb8b8" stroke-width="0.9" stroke-linecap="round"/><circle cx="5" cy="10" r="0.8" fill="#a0e0e0"/><circle cx="7.5" cy="10" r="0.8" fill="#a0e0e0"/></svg>';
+    },
+    gardensnail: function(s) {
+      // Big chunky: large round shell with prominent banding, thick body, stubby eye stalks, visible slime trail
+      s = s || 24;
+      return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><path d="M3 19 C3 17 5 15 9 15" stroke="#5fb8b8" stroke-width="1.5" stroke-linecap="round" fill="none"/><path d="M3 19 L20 19" stroke="#5fb8b8" stroke-width="1.2" stroke-linecap="round"/><circle cx="15" cy="11" r="7.5" fill="#3a6a6a" opacity="0.45"/><circle cx="15" cy="11" r="7.5" stroke="#5fb8b8" stroke-width="1.4" fill="none"/><path d="M15 3.5 Q9 6 10 11 Q11 16 18 15" stroke="#5fb8b8" stroke-width="1" fill="none" opacity="0.55"/><path d="M17 6 Q13 8 14 12" stroke="#5fb8b8" stroke-width="0.8" fill="none" opacity="0.4"/><path d="M15.5 8.5 Q14 10 14.5 12" stroke="#5fb8b8" stroke-width="0.6" fill="none" opacity="0.3"/><line x1="5" y1="16" x2="4" y2="12" stroke="#5fb8b8" stroke-width="1.1" stroke-linecap="round"/><line x1="7" y1="15.5" x2="6.5" y2="12" stroke="#5fb8b8" stroke-width="1.1" stroke-linecap="round"/><circle cx="4" cy="12" r="1" fill="#a0e0e0"/><circle cx="6.5" cy="12" r="1" fill="#a0e0e0"/><path d="M1 20 C3 19.5 5 20 7 19.5 C9 19 11 20 13 19.5" stroke="#5fb8b8" stroke-width="0.5" opacity="0.25" stroke-linecap="round"/></svg>';
+    },
+    zebrafish: function(s) {
+      s = s || 24;
+      return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><path d="M3 12 C3 8 7 6 12 6 C17 6 20 8 22 12 C20 16 17 18 12 18 C7 18 3 16 3 12Z" fill="#3a6a6a" opacity="0.4"/><path d="M3 12 C3 8 7 6 12 6 C17 6 20 8 22 12 C20 16 17 18 12 18 C7 18 3 16 3 12Z" stroke="#5fb8b8" stroke-width="1.2" fill="none"/><path d="M22 12 L24 9 L24 15 Z" stroke="#5fb8b8" stroke-width="0.8" fill="#3a6a6a" opacity="0.5"/><path d="M22 12 L24 9 L24 15 Z" stroke="#5fb8b8" stroke-width="0.8" fill="none"/><line x1="8" y1="7" x2="10" y2="17" stroke="#5fb8b8" stroke-width="0.6" opacity="0.4"/><line x1="12" y1="6" x2="13" y2="18" stroke="#5fb8b8" stroke-width="0.6" opacity="0.4"/><line x1="16" y1="7" x2="17" y2="17" stroke="#5fb8b8" stroke-width="0.6" opacity="0.4"/><circle cx="5" cy="11" r="1" fill="#a0e0e0"/><path d="M12 6 L13 3 L15 5" stroke="#5fb8b8" stroke-width="0.7" fill="none" opacity="0.5"/></svg>';
+    },
+    spider: function(s) {
+      s = s || 24;
+      return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="10" rx="3" ry="2.5" fill="#3a6a6a" opacity="0.5"/><ellipse cx="12" cy="10" rx="3" ry="2.5" stroke="#5fb8b8" stroke-width="1" fill="none"/><ellipse cx="12" cy="15" rx="4" ry="3.5" fill="#3a6a6a" opacity="0.5"/><ellipse cx="12" cy="15" rx="4" ry="3.5" stroke="#5fb8b8" stroke-width="1" fill="none"/><path d="M10 9 C7 7 4 4 2 2" stroke="#5fb8b8" stroke-width="0.9" stroke-linecap="round"/><path d="M14 9 C17 7 20 4 22 2" stroke="#5fb8b8" stroke-width="0.9" stroke-linecap="round"/><path d="M9 10 C6 9 3 8 1 7" stroke="#5fb8b8" stroke-width="0.9" stroke-linecap="round"/><path d="M15 10 C18 9 21 8 23 7" stroke="#5fb8b8" stroke-width="0.9" stroke-linecap="round"/><path d="M9 13 C6 14 3 16 1 18" stroke="#5fb8b8" stroke-width="0.9" stroke-linecap="round"/><path d="M15 13 C18 14 21 16 23 18" stroke="#5fb8b8" stroke-width="0.9" stroke-linecap="round"/><path d="M9 15 C7 17 4 20 2 22" stroke="#5fb8b8" stroke-width="0.9" stroke-linecap="round"/><path d="M15 15 C17 17 20 20 22 22" stroke="#5fb8b8" stroke-width="0.9" stroke-linecap="round"/><circle cx="11" cy="9" r="0.6" fill="#a0e0e0"/><circle cx="13" cy="9" r="0.6" fill="#a0e0e0"/></svg>';
+    },
+    fruitfly: function(s) {
+      s = s || 24;
+      return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="8" rx="2.5" ry="2" fill="#3a6a6a" opacity="0.5"/><ellipse cx="12" cy="8" rx="2.5" ry="2" stroke="#5fb8b8" stroke-width="1" fill="none"/><ellipse cx="12" cy="14" rx="3.5" ry="5" fill="#3a6a6a" opacity="0.5"/><ellipse cx="12" cy="14" rx="3.5" ry="5" stroke="#5fb8b8" stroke-width="1" fill="none"/><ellipse cx="6" cy="9" rx="4" ry="6" stroke="#5fb8b8" stroke-width="0.8" fill="none" opacity="0.4" transform="rotate(-30 6 9)"/><ellipse cx="18" cy="9" rx="4" ry="6" stroke="#5fb8b8" stroke-width="0.8" fill="none" opacity="0.4" transform="rotate(30 18 9)"/><circle cx="11" cy="7" r="0.8" fill="#ff6b6b" opacity="0.8"/><circle cx="13" cy="7" r="0.8" fill="#ff6b6b" opacity="0.8"/><line x1="11" y1="6" x2="9" y2="3" stroke="#5fb8b8" stroke-width="0.7" stroke-linecap="round"/><line x1="13" y1="6" x2="15" y2="3" stroke="#5fb8b8" stroke-width="0.7" stroke-linecap="round"/><line x1="10" y1="12" x2="7" y2="14" stroke="#5fb8b8" stroke-width="0.6" stroke-linecap="round"/><line x1="14" y1="12" x2="17" y2="14" stroke="#5fb8b8" stroke-width="0.6" stroke-linecap="round"/><line x1="10" y1="15" x2="6" y2="17" stroke="#5fb8b8" stroke-width="0.6" stroke-linecap="round"/><line x1="14" y1="15" x2="18" y2="17" stroke="#5fb8b8" stroke-width="0.6" stroke-linecap="round"/></svg>';
+    }
+  };
+
+  function animalSVG(id, size) { return ANIMAL_SVGS[id] ? ANIMAL_SVGS[id](size) : ''; }
+
+  // ── Animal brain equivalents v3 (by total synapse count, strict biological order) ──
+  // Animal tiers by NEURON COUNT (number of players/neurons in hive mind)
+  // Thresholds based on approximate biological neuron counts per organism
+  var ANIMAL_TIERS = [
+    { min: 0,      iconId: 'sponge',      name: 'Sponge',        fireInterval: 6000, decayRate: 0.07,  threshold: 0.85, propagation: 0.3  },  // 0 neurons (no nervous system)
+    { min: 1,      iconId: 'tardigrade',   name: 'Tardigrade',    fireInterval: 5500, decayRate: 0.065, threshold: 0.83, propagation: 0.35 },  // ~200 neurons
+    { min: 231,    iconId: 'seasquirt',    name: 'Sea Squirt',    fireInterval: 5000, decayRate: 0.06,  threshold: 0.8,  propagation: 0.4  },  // ~231 neurons (larval)
+    { min: 302,    iconId: 'roundworm',    name: 'C. elegans',    fireInterval: 4500, decayRate: 0.055, threshold: 0.75, propagation: 0.45 },  // 302 neurons (exact)
+    { min: 500,    iconId: 'hydra',        name: 'Hydra',         fireInterval: 4000, decayRate: 0.05,  threshold: 0.7,  propagation: 0.5  },  // ~500 neurons
+    { min: 5600,   iconId: 'jellyfish',    name: 'Jellyfish',     fireInterval: 3500, decayRate: 0.045, threshold: 0.65, propagation: 0.55 },  // ~5,600 neurons
+    { min: 10000,  iconId: 'pondsnail',    name: 'Pond Snail',    fireInterval: 2800, decayRate: 0.037, threshold: 0.58, propagation: 0.63 },  // ~10,000 neurons
+    { min: 18000,  iconId: 'seaslug',      name: 'Sea Slug',      fireInterval: 3100, decayRate: 0.04,  threshold: 0.6,  propagation: 0.6  },  // ~18,000 neurons (Aplysia)
+    { min: 20000,  iconId: 'snail',        name: 'Snail',         fireInterval: 2500, decayRate: 0.034, threshold: 0.55, propagation: 0.66 },  // ~20,000 neurons
+    { min: 60000,  iconId: 'gardensnail',  name: 'Garden Snail',  fireInterval: 2200, decayRate: 0.031, threshold: 0.52, propagation: 0.7  },  // ~60,000 neurons
+    { min: 100000, iconId: 'zebrafish',    name: 'Zebrafish',     fireInterval: 2000, decayRate: 0.028, threshold: 0.5,  propagation: 0.75 },  // ~100,000 neurons
+    { min: 100000, iconId: 'spider',       name: 'Spider',        fireInterval: 1800, decayRate: 0.025, threshold: 0.45, propagation: 0.8  },  // ~100,000-600,000 neurons
+    { min: 100000, iconId: 'fruitfly',     name: 'Fruit Fly',     fireInterval: 1500, decayRate: 0.02,  threshold: 0.4,  propagation: 0.85 }   // ~100,000 neurons
+  ];
+
+  // ── Neural populations (unlock progressively by tier) ──
+  // Each population has a target angle on the cluster for spatial grouping
+  var POPULATIONS = [
+    { id: 'sensors',     name: 'SENSORS',       color: [100,220,100], angle: -Math.PI/2,     unlockMin: 302,
+      desc: 'The input scouts. Detect touch, chemicals, temperature, light, and other signals from the environment.' },
+    { id: 'motors',      name: 'MOTORS',        color: [220,100,100], angle:  Math.PI/2,     unlockMin: 302,
+      desc: 'The output drivers. Activate muscles and steer movement, turning neural activity into action.' },
+    { id: 'pacemakers',  name: 'PACEMAKERS',    color: [220,180,60],  angle:  0,             unlockMin: 500,
+      desc: 'Rhythm starters that can kick activity into motion without waiting for a fresh external cue every time. A bridge toward pulsing and spontaneous contraction.' },
+    { id: 'relays',      name: 'RELAYS',        color: [79,195,247],  angle:  Math.PI,       unlockMin: 5600,
+      desc: 'Distributed signal spread without a central boss. In a nerve net, activity propagates through many local connections instead of passing through a single command center.' },
+    { id: 'rhythmloops', name: 'RHYTHM LOOPS',  color: [100,150,255], angle: -Math.PI*0.25,  unlockMin: 10000,
+      desc: 'Repeating circuit loops that generate patterned actions like crawl, bite, pulse, or cycle. The basis of rhythmic behavior.' },
+    { id: 'memory',      name: 'MEMORY',        color: [180,100,220], angle: -Math.PI*0.75,  unlockMin: 10000,
+      desc: 'Persistent circuit changes that let past experience shape future behavior. Not one literal cell type, but populations whose connections can hold a trace of learning.' },
+    { id: 'modulators',  name: 'MODULATORS',    color: [220,100,220], angle:  Math.PI*0.75,  unlockMin: 18000,
+      desc: 'Tuning neurons that adjust the whole circuit\'s state \u2014 stronger or weaker responses, longer-lasting effects, and greater plasticity.' },
+    { id: 'trackers',    name: 'TRACKERS',      color: [60,200,200],  angle:  Math.PI*0.25,  unlockMin: 60000,
+      desc: 'Chemosensory seekers and foragers. These populations help follow gradients, maintain heading, and move toward useful targets in the environment.' },
+    { id: 'hunters',     name: 'HUNTERS',       color: [255,140,60],  angle: -Math.PI*0.4,   unlockMin: 100000,
+      desc: 'Specialized prey-detection circuits that lock onto small moving targets and trigger orienting, pursuit, and strike behavior.' },
+    { id: 'deciders',    name: 'DECIDERS',      color: [255,100,160], angle:  Math.PI*0.4,   unlockMin: 100000,
+      desc: 'Action-selection circuits that weigh competing options \u2014 turn, continue, approach, avoid, strike, or abort \u2014 and push the system toward one choice.' }
+  ];
+
+  function getActivePopulations(neuronCount) {
+    var active = [];
+    for (var i = 0; i < POPULATIONS.length; i++) {
+      if (neuronCount >= POPULATIONS[i].unlockMin) active.push(POPULATIONS[i]);
+    }
+    return active;
+  }
+
+  // Build the legend panel showing all populations
+  function buildLegend(neuronCount) {
+    var container = document.getElementById('legendItems');
+    var html = '';
+    // Find which tier unlocks each population
+    function tierNameFor(minNeurons) {
+      for (var i = ANIMAL_TIERS.length - 1; i >= 0; i--) {
+        if (minNeurons >= ANIMAL_TIERS[i].min) return animalSVG(ANIMAL_TIERS[i].iconId, 12) + ' ' + ANIMAL_TIERS[i].name;
+      }
+      return '';
+    }
+    var weights = getPopulationWeights(neuronCount);
+    var weightMap = {};
+    for (var w = 0; w < weights.length; w++) weightMap[weights[w].pop.id] = weights[w].weight;
+
+    for (var i = 0; i < POPULATIONS.length; i++) {
+      var pop = POPULATIONS[i];
+      var unlocked = neuronCount >= pop.unlockMin;
+      var c = pop.color;
+      var lockClass = unlocked ? '' : ' legLocked';
+      var pct = weightMap[pop.id] ? Math.round(weightMap[pop.id] * 100) + '%' : '';
+      var unlockLabel = unlocked ? (pct + ' OF NEURONS') : 'UNLOCKS AT ' + tierNameFor(pop.unlockMin).toUpperCase();
+      html += '<div class="legItem' + lockClass + '">' +
+        '<span class="legDot" style="background:rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')"></span>' +
+        '<span class="legName" style="color:rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')">' + pop.name + '</span>' +
+        '<span class="legUnlock">' + unlockLabel + '</span>' +
+        '<div class="legDesc">' + (pop.desc || '') + '</div>' +
+        '</div>';
+    }
+    container.innerHTML = html;
+  }
+
+  // Biological proportions for each population at different tiers
+  // Weights are relative — they get normalized. Based on real neuron distributions.
+  // Key insight: sensory/motor dominate in simple organisms, interneuron types
+  // grow as nervous systems become more centralized.
+  var POP_WEIGHTS = {
+    'sensors':      { base: 0.38, decay: 0.04 },   // starts dominant, shrinks as brain complexifies
+    'motors':       { base: 0.35, decay: 0.04 },   // large early, shrinks
+    'pacemakers':   { base: 0.27, decay: 0.03 },   // rhythm starters, moderate
+    'relays':       { base: 0.30, decay: 0.02 },   // nerve net: distributed signal spread
+    'rhythmloops':  { base: 0.12, decay: 0.005 },  // CPG-like repeating circuits
+    'memory':       { base: 0.15, decay: 0.01 },   // persistent circuit changes
+    'modulators':   { base: 0.10, decay: 0.005 },  // tuning/plasticity neurons
+    'trackers':     { base: 0.10, decay: 0.005 },  // chemosensory seekers
+    'hunters':      { base: 0.08, decay: 0.003 },  // prey-detection circuits
+    'deciders':     { base: 0.10, decay: 0.003 }   // action-selection circuits
+  };
+
+  function getPopulationWeights(neuronCount) {
+    var active = getActivePopulations(neuronCount);
+    if (active.length === 0) return [];
+
+    // Each time a new population unlocks, earlier populations shrink slightly
+    // to make room. More populations = each one is proportionally smaller.
+    var weights = [];
+    var totalW = 0;
+    for (var i = 0; i < active.length; i++) {
+      var pw = POP_WEIGHTS[active[i].id];
+      // Reduce weight based on how many populations are active beyond this one
+      var laterPops = active.length - (i + 1);
+      var w = pw.base - pw.decay * laterPops;
+      w = Math.max(0.04, w); // minimum 4%
+      weights.push({ pop: active[i], weight: w });
+      totalW += w;
+    }
+    // Normalize
+    for (var i = 0; i < weights.length; i++) weights[i].weight /= totalW;
+    return weights;
+  }
+
+  // Assign neurons to populations — proportional by biological weights, spatially grouped by angle
+  function assignPopulations(neuronCount) {
+    var active = getActivePopulations(neuronCount);
+    if (active.length === 0) {
+      for (var i = 0; i < nodes.length; i++) nodes[i].population = null;
+      return;
+    }
+
+    var weights = getPopulationWeights(neuronCount);
+
+    // Compute center of mass
+    var cx = 0, cy = 0;
+    for (var i = 0; i < nodes.length; i++) { cx += nodes[i].x; cy += nodes[i].y; }
+    cx /= nodes.length; cy /= nodes.length;
+
+    // Sort nodes by angle from center
+    var indexed = [];
+    for (var i = 0; i < nodes.length; i++) {
+      var a = Math.atan2(nodes[i].y - cy, nodes[i].x - cx);
+      indexed.push({ idx: i, angle: a });
+    }
+    indexed.sort(function(a, b) { return a.angle - b.angle; });
+
+    // Sort populations by their target angle to match spatial ordering
+    var sortedWeights = weights.slice().sort(function(a, b) { return a.pop.angle - b.pop.angle; });
+
+    // Distribute nodes to populations in angular order, proportional to weights
+    var n = nodes.length;
+    var popIdx = 0;
+    var assigned = 0;
+    for (var p = 0; p < sortedWeights.length; p++) {
+      var count;
+      if (p === sortedWeights.length - 1) {
+        count = n - assigned; // last pop gets remainder
+      } else {
+        count = Math.round(sortedWeights[p].weight * n);
+      }
+      for (var j = 0; j < count && assigned < n; j++) {
+        nodes[indexed[assigned].idx].population = sortedWeights[p].pop;
+        assigned++;
+      }
+    }
+  }
+
+  function getAnimalTier(count) {
+    var tier = ANIMAL_TIERS[0];
+    for (var i = ANIMAL_TIERS.length - 1; i >= 0; i--) {
+      if (count >= ANIMAL_TIERS[i].min) { tier = ANIMAL_TIERS[i]; break; }
+    }
+    return tier;
+  }
+
+  function getNextTier(count) {
+    for (var i = 0; i < ANIMAL_TIERS.length; i++) {
+      if (count < ANIMAL_TIERS[i].min) return ANIMAL_TIERS[i];
+    }
+    return null;
+  }
+
+  // ── Canvas setup ──
+  var bgCanvas = document.getElementById('bgCanvas');
+  var fxCanvas = document.getElementById('fxCanvas');
+  var bgCtx = bgCanvas.getContext('2d');
+  var fxCtx = fxCanvas.getContext('2d');
+  var W, H;
+
+  function resize() {
+    W = window.innerWidth; H = window.innerHeight;
+    bgCanvas.width = W; bgCanvas.height = H;
+    fxCanvas.width = W; fxCanvas.height = H;
+  }
+  resize();
+  window.addEventListener('resize', function() { resize(); if (nodes.length) { layoutAndRender(); } });
+
+  // ── Data ──
+  var nodes = [];   // { x, y, vx, vy, radius, data, prerender, edges[] }
+  var edges = [];   // { source, target, weight }
+  var fires = [];   // { nodeIdx, intensity, decayRate }
+  var signals = []; // { edgeIdx, progress, speed, direction, intensity }
+  var currentTier = ANIMAL_TIERS[0];
+  var mouseX = -1, mouseY = -1;
+  var hoveredNode = -1;
+  var autoFireTimer = null;
+
+  // ── Fetch data ──
+  sb.from('neuron_gallery')
+    .select('name, score, branches, soma_x, soma_y, axon_pts, cols, rows, created_at')
+    .order('score', { ascending: false })
+    .then(function(res) {
+      if (res.error || !res.data || !res.data.length) {
+        document.querySelector('#loading .loadText').textContent = 'NO NEURONS FOUND';
+        return;
+      }
+      initNetwork(res.data);
+      document.getElementById('loading').style.display = 'none';
+    });
+
+  function initNetwork(data) {
+    // Build nodes
+    var totalSynapses = 0;
+    for (var i = 0; i < data.length; i++) {
+      var d = data[i];
+      totalSynapses += d.score || 0;
+      var angle = (i / data.length) * Math.PI * 2;
+      var cx = W / 2, cy = (H + 130) / 2;
+      var spread = Math.min(W, H) * 0.25;
+      nodes.push({
+        x: cx + Math.cos(angle) * spread + (Math.random() - 0.5) * 40,
+        y: cy + Math.sin(angle) * spread + (Math.random() - 0.5) * 40,
+        vx: 0, vy: 0,
+        radius: Math.max(5, Math.sqrt(d.score || 1) * 2),
+        data: d,
+        prerender: null,
+        edgeIndices: []
+      });
+    }
+
+    // Build edges
+    buildEdges();
+
+    // Update stats
+    document.getElementById('neuronCount').textContent = nodes.length;
+    document.getElementById('synapseCount').textContent = totalSynapses.toLocaleString();
+    document.getElementById('popCount').textContent = getActivePopulations(neuronCount).length + '/' + POPULATIONS.length;
+
+    // Animal tier (based on neuron count = number of players)
+    var neuronCount = nodes.length;
+    currentTier = getAnimalTier(neuronCount);
+    document.getElementById('badgeIcon').innerHTML = animalSVG(currentTier.iconId, 22);
+    document.getElementById('badgeText').textContent = 'AS SMART AS A ' + currentTier.name.toUpperCase();
+
+    var next = getNextTier(neuronCount);
+    if (next) {
+      var needed = next.min - neuronCount;
+      document.getElementById('progressWrap').style.display = 'flex';
+      document.getElementById('progLabel').innerHTML = '<span class="progNum">' + needed.toLocaleString() + '</span> neurons until ' + animalSVG(next.iconId, 14) + ' ' + next.name.toUpperCase();
+      var prevMin = currentTier.min;
+      var pct = Math.min(100, ((neuronCount - prevMin) / (next.min - prevMin)) * 100);
+      document.getElementById('progFill').style.width = pct + '%';
+    }
+
+    // Run layout
+    runForceLayout();
+
+    // Assign populations after layout settles
+    assignPopulations(neuronCount);
+
+    // Build legend panel
+    buildLegend(neuronCount);
+
+    // Prerender mini neurons (with population tint)
+    for (var i = 0; i < nodes.length; i++) {
+      nodes[i].prerender = prerenderNeuron(nodes[i].data, Math.round(nodes[i].radius * 5));
+    }
+
+    // Render static
+    renderStatic();
+
+    // Start animation — fire immediately on load, then continue auto-firing
+    if (nodes.length > 0) fireNode(pickFromPopulation('sensors'), 1.0);
+    startAutoFire();
+    requestAnimationFrame(animLoop);
+  }
+
+  // ── Edge building ──
+  function buildEdges() {
+    edges = [];
+    var n = nodes.length;
+    if (n < 2) return;
+
+    // Distance matrix
+    function dist(a, b) {
+      var dx = a.x - b.x, dy = a.y - b.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // 1. MST via Prim's to guarantee connectivity
+    var inMST = new Array(n);
+    inMST[0] = true;
+    var mstCount = 1;
+    var edgeSet = {};
+    function edgeKey(a, b) { return Math.min(a, b) + '-' + Math.max(a, b); }
+
+    while (mstCount < n) {
+      var bestDist = Infinity, bestI = -1, bestJ = -1;
+      for (var i = 0; i < n; i++) {
+        if (!inMST[i]) continue;
+        for (var j = 0; j < n; j++) {
+          if (inMST[j]) continue;
+          var d = dist(nodes[i], nodes[j]);
+          if (d < bestDist) { bestDist = d; bestI = i; bestJ = j; }
+        }
+      }
+      if (bestJ >= 0) {
+        inMST[bestJ] = true;
+        mstCount++;
+        var key = edgeKey(bestI, bestJ);
+        if (!edgeSet[key]) {
+          edgeSet[key] = true;
+          var w = Math.min(nodes[bestI].data.score || 1, nodes[bestJ].data.score || 1);
+          var idx = edges.length;
+          edges.push({ source: bestI, target: bestJ, weight: w });
+          nodes[bestI].edgeIndices.push(idx);
+          nodes[bestJ].edgeIndices.push(idx);
+        }
+      }
+    }
+
+    // 2. Budget-based extra connections
+    for (var i = 0; i < n; i++) {
+      var budget = Math.ceil(Math.sqrt(nodes[i].data.score || 1));
+      var current = nodes[i].edgeIndices.length;
+      var remaining = Math.max(0, budget - current);
+      if (remaining <= 0) continue;
+
+      // Find nearest neighbors not yet connected
+      var dists = [];
+      for (var j = 0; j < n; j++) {
+        if (j === i) continue;
+        var key = edgeKey(i, j);
+        if (edgeSet[key]) continue;
+        dists.push({ idx: j, d: dist(nodes[i], nodes[j]) });
+      }
+      dists.sort(function(a, b) { return a.d - b.d; });
+
+      for (var k = 0; k < Math.min(remaining, dists.length); k++) {
+        var j = dists[k].idx;
+        var key = edgeKey(i, j);
+        if (edgeSet[key]) continue;
+        edgeSet[key] = true;
+        var w = Math.min(nodes[i].data.score || 1, nodes[j].data.score || 1);
+        var idx = edges.length;
+        edges.push({ source: i, target: j, weight: w });
+        nodes[i].edgeIndices.push(idx);
+        nodes[j].edgeIndices.push(idx);
+      }
+    }
+  }
+
+  // ── Force-directed layout ──
+  function runForceLayout() {
+    var n = nodes.length;
+    var k = Math.sqrt((W * H) / n) * 0.4; // ideal edge length
+    var iterations = 200;
+    var temp = Math.min(W, H) * 0.15;
+    var cooling = temp / iterations;
+    var margin = 60;
+    var topMargin = 140; // space for header/stats/badge
+
+    for (var iter = 0; iter < iterations; iter++) {
+      // Reset velocities
+      for (var i = 0; i < n; i++) { nodes[i].vx = 0; nodes[i].vy = 0; }
+
+      // Repulsion (only nearby pairs for performance with 300 nodes)
+      var repulseRadius = k * 4;
+      for (var i = 0; i < n; i++) {
+        for (var j = i + 1; j < n; j++) {
+          var dx = nodes[i].x - nodes[j].x;
+          var dy = nodes[i].y - nodes[j].y;
+          var d = Math.sqrt(dx * dx + dy * dy);
+          if (d > repulseRadius) continue;
+          d = Math.max(d, 1);
+          var force = (k * k) / (d * d) * 2;
+          var fx = (dx / d) * force, fy = (dy / d) * force;
+          nodes[i].vx += fx; nodes[i].vy += fy;
+          nodes[j].vx -= fx; nodes[j].vy -= fy;
+        }
+      }
+
+      // Attraction (edges) — linear spring
+      for (var e = 0; e < edges.length; e++) {
+        var s = nodes[edges[e].source], t = nodes[edges[e].target];
+        var dx = t.x - s.x, dy = t.y - s.y;
+        var d = Math.sqrt(dx * dx + dy * dy) || 1;
+        var force = (d - k) * 0.05;
+        var fx = (dx / d) * force, fy = (dy / d) * force;
+        s.vx += fx; s.vy += fy;
+        t.vx -= fx; t.vy -= fy;
+      }
+
+      // Center gravity — stronger to keep it clustered
+      var cx = W / 2, cy = (H + topMargin) / 2;
+      for (var i = 0; i < n; i++) {
+        var dx = cx - nodes[i].x, dy = cy - nodes[i].y;
+        var gDist = Math.sqrt(dx * dx + dy * dy) || 1;
+        nodes[i].vx += dx * 0.05;
+        nodes[i].vy += dy * 0.05;
+      }
+
+      // Apply with temperature clamping
+      for (var i = 0; i < n; i++) {
+        var vLen = Math.sqrt(nodes[i].vx * nodes[i].vx + nodes[i].vy * nodes[i].vy) || 1;
+        var capped = Math.min(vLen, temp);
+        nodes[i].x += (nodes[i].vx / vLen) * capped;
+        nodes[i].y += (nodes[i].vy / vLen) * capped;
+        // Soft boundary — push back rather than clamp
+        if (nodes[i].x < margin) nodes[i].vx += (margin - nodes[i].x) * 0.5;
+        if (nodes[i].x > W - margin) nodes[i].vx -= (nodes[i].x - (W - margin)) * 0.5;
+        if (nodes[i].y < topMargin) nodes[i].vy += (topMargin - nodes[i].y) * 0.5;
+        if (nodes[i].y > H - margin) nodes[i].vy -= (nodes[i].y - (H - margin)) * 0.5;
+        nodes[i].x = Math.max(20, Math.min(W - 20, nodes[i].x));
+        nodes[i].y = Math.max(topMargin - 20, Math.min(H - 20, nodes[i].y));
+      }
+
+      temp = Math.max(0.5, temp - cooling);
+    }
+  }
+
+  // ── Prerender mini neuron ──
+  function prerenderNeuron(data, size) {
+    size = Math.max(20, size);
+    var oc = document.createElement('canvas');
+    oc.width = size; oc.height = size;
+    var ctx = oc.getContext('2d');
+
+    var cols = data.cols || 48;
+    var rows = data.rows || 48;
+    var maxDim = Math.max(cols, rows);
+    var scale = size / maxDim;
+    var offX = (size - cols * scale) / 2;
+    var offY = (size - rows * scale) / 2;
+
+    function gx(x) { return x * scale + scale / 2 + offX; }
+    function gy(y) { return y * scale + scale / 2 + offY; }
+
+    // Axon
+    var axon = data.axon_pts;
+    if (axon && axon.length > 0) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,107,157,0.4)';
+      ctx.lineWidth = 1;
+      ctx.lineCap = 'round';
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(gx(data.soma_x), gy(data.soma_y));
+      for (var ai = 0; ai < axon.length; ai++) ctx.lineTo(gx(axon[ai].x), gy(axon[ai].y));
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    // Branches
+    var branches = data.branches;
+    if (branches) {
+      for (var bi = 0; bi < branches.length; bi++) {
+        var b = branches[bi];
+        if (!b.path || b.path.length < 2) continue;
+        ctx.save();
+        ctx.strokeStyle = bi === 0 ? 'rgba(79,195,247,0.85)' : 'rgba(30,120,200,0.45)';
+        ctx.lineWidth = bi === 0 ? 1.5 : 1;
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(gx(data.soma_x), gy(data.soma_y));
+        for (var pi = 0; pi < b.path.length; pi++) ctx.lineTo(gx(b.path[pi].x), gy(b.path[pi].y));
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // Soma
+    var smx = gx(data.soma_x), smy = gy(data.soma_y);
+    var r = scale * 2.8;
+    ctx.save(); ctx.translate(smx, smy);
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.8);
+    ctx.bezierCurveTo(r * 0.25, -r * 0.35, r * 0.7, r * 0.2, r * 0.7, r * 0.6);
+    ctx.bezierCurveTo(r * 0.4, r * 0.72, -r * 0.4, r * 0.72, -r * 0.7, r * 0.6);
+    ctx.bezierCurveTo(-r * 0.7, r * 0.2, -r * 0.25, -r * 0.35, 0, -r * 0.8);
+    ctx.closePath();
+    var fg = ctx.createRadialGradient(0, -r * 0.05, 0, 0, r * 0.2, r * 0.9);
+    fg.addColorStop(0, 'rgba(140,220,255,1)');
+    fg.addColorStop(0.4, 'rgba(40,130,220,1)');
+    fg.addColorStop(1, 'rgba(4,20,70,1)');
+    ctx.fillStyle = fg; ctx.fill();
+    ctx.restore();
+
+    return oc;
+  }
+
+  // ── Render static layer ──
+  function renderStatic() {
+    bgCtx.clearRect(0, 0, W, H);
+
+    // Edges — tinted by population when both ends share one
+    for (var e = 0; e < edges.length; e++) {
+      var s = nodes[edges[e].source], t = nodes[edges[e].target];
+      bgCtx.beginPath();
+      bgCtx.moveTo(s.x, s.y);
+      bgCtx.lineTo(t.x, t.y);
+      var samePop = s.population && t.population && s.population.id === t.population.id;
+      if (samePop) {
+        var ec = s.population.color;
+        bgCtx.strokeStyle = 'rgba(' + ec[0] + ',' + ec[1] + ',' + ec[2] + ',0.14)';
+      } else {
+        bgCtx.strokeStyle = 'rgba(79,195,247,0.06)';
+      }
+      bgCtx.lineWidth = 0.5 + (edges[e].weight / 20) * 0.5;
+      bgCtx.stroke();
+    }
+
+    // Population territory zones — proportional radial wedges from cluster center
+    var cx0 = 0, cy0 = 0;
+    for (var i = 0; i < nodes.length; i++) { cx0 += nodes[i].x; cy0 += nodes[i].y; }
+    if (nodes.length) { cx0 /= nodes.length; cy0 /= nodes.length; }
+    var realTotal0 = 0;
+    for (var i = 0; i < nodes.length; i++) realTotal0 += (nodes[i].data.score || 0);
+    var weights0 = getPopulationWeights(realTotal0);
+    if (weights0.length > 1) {
+      var maxR0 = 0;
+      for (var i = 0; i < nodes.length; i++) {
+        var ddx = nodes[i].x - cx0, ddy = nodes[i].y - cy0;
+        var dd = Math.sqrt(ddx * ddx + ddy * ddy);
+        if (dd > maxR0) maxR0 = dd;
+      }
+      var zoneR = maxR0 + 60;
+      // Sort weights by angle to lay out wedges contiguously
+      var sorted0 = weights0.slice().sort(function(a, b) { return a.pop.angle - b.pop.angle; });
+      // Compute starting angle from the first population's angle minus half its arc
+      var startAngle = sorted0[0].pop.angle - sorted0[0].weight * Math.PI;
+      for (var p = 0; p < sorted0.length; p++) {
+        var pop = sorted0[p].pop;
+        var arcSize = sorted0[p].weight * Math.PI * 2; // proportional arc
+        var zoneGrad = bgCtx.createRadialGradient(cx0, cy0, zoneR * 0.1, cx0, cy0, zoneR);
+        zoneGrad.addColorStop(0, 'rgba(' + pop.color[0] + ',' + pop.color[1] + ',' + pop.color[2] + ',0)');
+        zoneGrad.addColorStop(0.5, 'rgba(' + pop.color[0] + ',' + pop.color[1] + ',' + pop.color[2] + ',0.03)');
+        zoneGrad.addColorStop(1, 'rgba(' + pop.color[0] + ',' + pop.color[1] + ',' + pop.color[2] + ',0.06)');
+        bgCtx.beginPath();
+        bgCtx.moveTo(cx0, cy0);
+        bgCtx.arc(cx0, cy0, zoneR, startAngle, startAngle + arcSize);
+        bgCtx.closePath();
+        bgCtx.fillStyle = zoneGrad;
+        bgCtx.fill();
+        startAngle += arcSize;
+      }
+    }
+
+    // Nodes
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      var pc = n.population ? n.population.color : [79,195,247]; // default cyan
+      // Outer glow — population colored, stronger
+      var glowR = n.radius * 3;
+      var glow = bgCtx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
+      glow.addColorStop(0, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0.3)');
+      glow.addColorStop(0.5, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0.1)');
+      glow.addColorStop(1, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0)');
+      bgCtx.beginPath(); bgCtx.arc(n.x, n.y, glowR, 0, Math.PI * 2);
+      bgCtx.fillStyle = glow; bgCtx.fill();
+
+      // Mini neuron
+      if (n.prerender) {
+        var s = n.prerender.width;
+        bgCtx.drawImage(n.prerender, n.x - s / 2, n.y - s / 2);
+      }
+
+      // Population core dot — solid colored ring around soma
+      if (n.population) {
+        bgCtx.beginPath(); bgCtx.arc(n.x, n.y, n.radius * 0.6, 0, Math.PI * 2);
+        bgCtx.strokeStyle = 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0.6)';
+        bgCtx.lineWidth = 1.5;
+        bgCtx.stroke();
+      }
+    }
+
+    // Population labels — placed at centroid angle of each population's actual neurons
+    // Reuse cx0/cy0 (cluster center) from territory zone code above
+    var labelR2 = (typeof maxR0 !== 'undefined' ? maxR0 : 100) + 40;
+
+    // Compute centroid angle for each population
+    var popAngleMap = {};
+    for (var i = 0; i < nodes.length; i++) {
+      if (!nodes[i].population) continue;
+      var pid = nodes[i].population.id;
+      if (!popAngleMap[pid]) popAngleMap[pid] = { sx: 0, sy: 0, count: 0, pop: nodes[i].population };
+      popAngleMap[pid].sx += nodes[i].x - cx0;
+      popAngleMap[pid].sy += nodes[i].y - cy0;
+      popAngleMap[pid].count++;
+    }
+
+    bgCtx.textAlign = 'center';
+    for (var pid in popAngleMap) {
+      var pm = popAngleMap[pid];
+      var centAngle = Math.atan2(pm.sy / pm.count, pm.sx / pm.count);
+      var pop = pm.pop;
+      var lx = cx0 + Math.cos(centAngle) * labelR2;
+      var ly = cy0 + Math.sin(centAngle) * labelR2;
+      // Background pill
+      bgCtx.font = '700 10px "Courier New", monospace';
+      var tw = bgCtx.measureText(pop.name).width;
+      bgCtx.fillStyle = 'rgba(' + pop.color[0] + ',' + pop.color[1] + ',' + pop.color[2] + ',0.12)';
+      bgCtx.beginPath();
+      bgCtx.roundRect(lx - tw/2 - 6, ly - 8, tw + 12, 16, 3);
+      bgCtx.fill();
+      // Label text
+      bgCtx.fillStyle = 'rgba(' + pop.color[0] + ',' + pop.color[1] + ',' + pop.color[2] + ',0.8)';
+      bgCtx.fillText(pop.name, lx, ly + 4);
+    }
+  }
+
+  function layoutAndRender() {
+    // Re-layout for new size
+    var cx = W / 2, cy = H / 2;
+    for (var i = 0; i < nodes.length; i++) {
+      var angle = (i / nodes.length) * Math.PI * 2;
+      var spread = Math.min(W, H) * 0.3;
+      nodes[i].x = cx + Math.cos(angle) * spread + (Math.random() - 0.5) * 40;
+      nodes[i].y = cy + Math.sin(angle) * spread + (Math.random() - 0.5) * 40;
+    }
+    runForceLayout();
+    renderStatic();
+  }
+
+  // ── Firing system ──
+  function fireNode(idx, intensity, sourceIdx) {
+    // Check if already firing strong
+    for (var f = 0; f < fires.length; f++) {
+      if (fires[f].nodeIdx === idx && fires[f].intensity > 0.3) return;
+    }
+    var decay = currentTier.decayRate + 0.01 / Math.sqrt((nodes[idx].data.score || 1));
+    fires.push({ nodeIdx: idx, intensity: intensity || 1.0, decayRate: decay, propagated: false, sourceIdx: sourceIdx !== undefined ? sourceIdx : -1 });
+  }
+
+  // Pick a random node from a specific population (or any if pop is null)
+  function pickFromPopulation(popId) {
+    var candidates = [];
+    for (var i = 0; i < nodes.length; i++) {
+      if (!popId || (nodes[i].population && nodes[i].population.id === popId)) {
+        candidates.push(i);
+      }
+    }
+    if (candidates.length === 0) return Math.floor(Math.random() * nodes.length);
+    // Weighted by score
+    var totalScore = 0;
+    for (var c = 0; c < candidates.length; c++) totalScore += (nodes[candidates[c]].data.score || 1);
+    var r = Math.random() * totalScore, acc = 0;
+    for (var c = 0; c < candidates.length; c++) {
+      acc += (nodes[candidates[c]].data.score || 1);
+      if (acc >= r) return candidates[c];
+    }
+    return candidates[0];
+  }
+
+  function startAutoFire() {
+    if (autoFireTimer) clearTimeout(autoFireTimer);
+    function doFire() {
+      if (nodes.length === 0) return;
+
+      // Tier-aware firing patterns
+      var hasPopulations = nodes[0] && nodes[0].population;
+      if (hasPopulations) {
+        var pattern = Math.random();
+        if (pattern < 0.4) {
+          // Sensory→motor cascade: fire a sensory neuron
+          fireNode(pickFromPopulation('sensors'), 1.0);
+        } else if (pattern < 0.6 && currentTier.min >= 18000) {
+          // Memory replay: fire a memory neuron (sea slug+)
+          fireNode(pickFromPopulation('memory'), 1.0);
+        } else if (pattern < 0.75 && currentTier.min >= 5600) {
+          // Relay pulse: fire from relays (jellyfish+)
+          fireNode(pickFromPopulation('relays'), 1.0);
+        } else {
+          // Random weighted fire
+          fireNode(pickFromPopulation(null), 1.0);
+        }
+      } else {
+        // No populations — random weighted fire
+        fireNode(pickFromPopulation(null), 1.0);
+      }
+
+      var jitter = (Math.random() - 0.5) * currentTier.fireInterval * 0.4;
+      autoFireTimer = setTimeout(doFire, currentTier.fireInterval + jitter);
+    }
+    var jitter = (Math.random() - 0.5) * currentTier.fireInterval * 0.4;
+    autoFireTimer = setTimeout(doFire, currentTier.fireInterval + jitter);
+  }
+
+  // ── Animation loop ──
+  var maxEdgeWeight = 1;
+  function animLoop() {
+    fxCtx.clearRect(0, 0, W, H);
+
+    if (edges.length > 0 && maxEdgeWeight === 1) {
+      for (var e = 0; e < edges.length; e++) {
+        if (edges[e].weight > maxEdgeWeight) maxEdgeWeight = edges[e].weight;
+      }
+    }
+
+    // Update fires
+    for (var f = fires.length - 1; f >= 0; f--) {
+      var fire = fires[f];
+      fire.intensity *= (1 - fire.decayRate);
+
+      // Propagate when crossing threshold
+      if (!fire.propagated && fire.intensity < currentTier.threshold) {
+        fire.propagated = true;
+        var nodeEdges = nodes[fire.nodeIdx].edgeIndices;
+        for (var e = 0; e < nodeEdges.length; e++) {
+          var ei = nodeEdges[e];
+          var edge = edges[ei];
+          // Determine destination — skip sending back to source (prevents bounce-back)
+          var dir = edge.source === fire.nodeIdx ? 1 : -1;
+          var destIdx = dir === 1 ? edge.target : edge.source;
+          if (destIdx === fire.sourceIdx) continue; // don't send signal back where it came from
+          // Check no signal already on this edge in same direction
+          var dup = false;
+          for (var s = 0; s < signals.length; s++) {
+            if (signals[s].edgeIdx === ei && signals[s].direction === dir) { dup = true; break; }
+          }
+          if (!dup) {
+            var speed = 0.012 + 0.008 * (edge.weight / maxEdgeWeight);
+            signals.push({ edgeIdx: ei, progress: 0, speed: speed, direction: dir, intensity: fire.intensity * currentTier.propagation });
+          }
+        }
+      }
+
+      // Remove dead fires
+      if (fire.intensity < 0.02) { fires.splice(f, 1); }
+    }
+
+    // Update signals
+    for (var s = signals.length - 1; s >= 0; s--) {
+      var sig = signals[s];
+      sig.progress += sig.speed;
+      if (sig.progress >= 1.0) {
+        // Fire destination node — pass source so it won't bounce back
+        var edge = edges[sig.edgeIdx];
+        var destIdx = sig.direction === 1 ? edge.target : edge.source;
+        var srcIdx = sig.direction === 1 ? edge.source : edge.target;
+        if (sig.intensity > 0.08) {
+          fireNode(destIdx, sig.intensity, srcIdx);
+        }
+        signals.splice(s, 1);
+      }
+    }
+
+    // Render active edges
+    for (var s = 0; s < signals.length; s++) {
+      var sig = signals[s];
+      var edge = edges[sig.edgeIdx];
+      var sn = nodes[edge.source], tn = nodes[edge.target];
+      var sx = sig.direction === 1 ? sn.x : tn.x;
+      var sy = sig.direction === 1 ? sn.y : tn.y;
+      var ex = sig.direction === 1 ? tn.x : sn.x;
+      var ey = sig.direction === 1 ? tn.y : sn.y;
+
+      // Determine signal color from source node population
+      var srcNode = sig.direction === 1 ? sn : tn;
+      var sigCol = srcNode.population ? srcNode.population.color : [79,195,247];
+      var sigColBright = [Math.min(255, sigCol[0]+80), Math.min(255, sigCol[1]+80), Math.min(255, sigCol[2]+80)];
+
+      // Bright edge
+      fxCtx.beginPath();
+      fxCtx.moveTo(sn.x, sn.y);
+      fxCtx.lineTo(tn.x, tn.y);
+      fxCtx.strokeStyle = 'rgba(' + sigCol[0] + ',' + sigCol[1] + ',' + sigCol[2] + ',' + (0.15 + 0.3 * sig.intensity) + ')';
+      fxCtx.lineWidth = 1;
+      fxCtx.stroke();
+
+      // Traveling dot
+      var px = sx + (ex - sx) * sig.progress;
+      var py = sy + (ey - sy) * sig.progress;
+      var dotR = 2 + sig.intensity * 2;
+      var dotGlow = fxCtx.createRadialGradient(px, py, 0, px, py, dotR * 3);
+      dotGlow.addColorStop(0, 'rgba(' + sigColBright[0] + ',' + sigColBright[1] + ',' + sigColBright[2] + ',' + sig.intensity + ')');
+      dotGlow.addColorStop(1, 'rgba(' + sigCol[0] + ',' + sigCol[1] + ',' + sigCol[2] + ',0)');
+      fxCtx.beginPath(); fxCtx.arc(px, py, dotR * 3, 0, Math.PI * 2);
+      fxCtx.fillStyle = dotGlow; fxCtx.fill();
+      fxCtx.beginPath(); fxCtx.arc(px, py, dotR, 0, Math.PI * 2);
+      fxCtx.fillStyle = 'rgba(' + sigColBright[0] + ',' + sigColBright[1] + ',' + sigColBright[2] + ',' + Math.min(1, sig.intensity * 1.5) + ')';
+      fxCtx.fill();
+
+      // Trail
+      for (var t = 1; t <= 3; t++) {
+        var tp = sig.progress - t * 0.03;
+        if (tp < 0) continue;
+        var tx = sx + (ex - sx) * tp;
+        var ty = sy + (ey - sy) * tp;
+        fxCtx.beginPath(); fxCtx.arc(tx, ty, dotR * (1 - t * 0.2), 0, Math.PI * 2);
+        fxCtx.fillStyle = 'rgba(' + sigCol[0] + ',' + sigCol[1] + ',' + sigCol[2] + ',' + (sig.intensity * (0.5 - t * 0.12)) + ')';
+        fxCtx.fill();
+      }
+    }
+
+    // Render firing nodes — population colored
+    for (var f = 0; f < fires.length; f++) {
+      var fire = fires[f];
+      var nd = nodes[fire.nodeIdx];
+      var pc = nd.population ? nd.population.color : [200,240,255];
+      var glowR = nd.radius * 3 * fire.intensity;
+      var glow = fxCtx.createRadialGradient(nd.x, nd.y, 0, nd.x, nd.y, glowR);
+      glow.addColorStop(0, 'rgba(' + Math.min(255, pc[0]+55) + ',' + Math.min(255, pc[1]+55) + ',' + Math.min(255, pc[2]+55) + ',' + (fire.intensity * 0.8) + ')');
+      glow.addColorStop(0.4, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',' + (fire.intensity * 0.4) + ')');
+      glow.addColorStop(1, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0)');
+      fxCtx.beginPath(); fxCtx.arc(nd.x, nd.y, glowR, 0, Math.PI * 2);
+      fxCtx.fillStyle = glow; fxCtx.fill();
+    }
+
+    // Hovered node highlight
+    if (hoveredNode >= 0) {
+      var hn = nodes[hoveredNode];
+      // Highlight connected edges
+      for (var e = 0; e < hn.edgeIndices.length; e++) {
+        var edge = edges[hn.edgeIndices[e]];
+        var s = nodes[edge.source], t = nodes[edge.target];
+        fxCtx.beginPath(); fxCtx.moveTo(s.x, s.y); fxCtx.lineTo(t.x, t.y);
+        fxCtx.strokeStyle = 'rgba(79,195,247,0.25)';
+        fxCtx.lineWidth = 1.5;
+        fxCtx.stroke();
+      }
+      // Node highlight ring
+      fxCtx.beginPath(); fxCtx.arc(hn.x, hn.y, hn.radius + 4, 0, Math.PI * 2);
+      fxCtx.strokeStyle = 'rgba(79,195,247,0.5)';
+      fxCtx.lineWidth = 1;
+      fxCtx.stroke();
+      // Name label — population colored
+      var hpc = hn.population ? hn.population.color : [79,195,247];
+      fxCtx.font = '700 10px "Courier New", monospace';
+      fxCtx.fillStyle = 'rgb(' + hpc[0] + ',' + hpc[1] + ',' + hpc[2] + ')';
+      fxCtx.textAlign = 'center';
+      fxCtx.fillText((hn.data.name || 'ANON').toUpperCase(), hn.x, hn.y - hn.radius - 10);
+    }
+
+    requestAnimationFrame(animLoop);
+  }
+
+  // ── Mouse interaction ──
+  fxCanvas.addEventListener('mousemove', function(e) {
+    mouseX = e.clientX; mouseY = e.clientY;
+    hoveredNode = -1;
+    for (var i = 0; i < nodes.length; i++) {
+      var dx = mouseX - nodes[i].x, dy = mouseY - nodes[i].y;
+      if (Math.sqrt(dx * dx + dy * dy) < nodes[i].radius + 8) {
+        hoveredNode = i;
+        break;
+      }
+    }
+
+    var tooltip = document.getElementById('tooltip');
+    if (hoveredNode >= 0) {
+      var nd = nodes[hoveredNode];
+      document.getElementById('ttName').textContent = (nd.data.name || 'ANON').toUpperCase();
+      document.getElementById('ttScore').textContent = nd.data.score + ' SYNAPSES';
+      var ttPop = document.getElementById('ttPop');
+      if (nd.population) {
+        var pc = nd.population.color;
+        ttPop.textContent = nd.population.name;
+        ttPop.style.color = 'rgb(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ')';
+        ttPop.style.display = 'block';
+      } else {
+        ttPop.style.display = 'none';
+      }
+      document.getElementById('ttDate').textContent = formatDate(nd.data.created_at);
+      var cc = nd.data.country_code;
+      document.getElementById('ttFlag').innerHTML = cc ? '<img src="https://flagcdn.com/w20/' + cc.toLowerCase() + '.png" style="height:10px;vertical-align:middle;margin-right:4px;">' : '';
+      tooltip.style.display = 'block';
+      var tx = mouseX + 16, ty = mouseY + 16;
+      if (tx + 220 > W) tx = mouseX - 230;
+      if (ty + 80 > H) ty = mouseY - 90;
+      tooltip.style.left = tx + 'px';
+      tooltip.style.top = ty + 'px';
+      fxCanvas.style.cursor = 'pointer';
+    } else {
+      tooltip.style.display = 'none';
+      fxCanvas.style.cursor = 'crosshair';
+    }
+  });
+
+  fxCanvas.addEventListener('click', function(e) {
+    if (hoveredNode >= 0) {
+      fireNode(hoveredNode, 1.0);
+    } else {
+      // Find nearest node to click
+      var best = -1, bestDist = Infinity;
+      for (var i = 0; i < nodes.length; i++) {
+        var dx = e.clientX - nodes[i].x, dy = e.clientY - nodes[i].y;
+        var d = Math.sqrt(dx * dx + dy * dy);
+        if (d < bestDist) { bestDist = d; best = i; }
+      }
+      if (best >= 0 && bestDist < 100) fireNode(best, 0.8);
+    }
+  });
+
+  fxCanvas.addEventListener('mouseleave', function() {
+    hoveredNode = -1;
+    document.getElementById('tooltip').style.display = 'none';
+  });
+
+  function formatDate(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    var months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+  }
+})();
+</script>
+</body>
+</html>

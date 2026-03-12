@@ -407,28 +407,57 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
       galleryKeys[galleryData[i].name + '|' + galleryData[i].score] = true;
     }
 
-    // Add leaderboard entries that aren't already in gallery
-    var merged = galleryData.slice();
+    // Separate leaderboard-only entries (not in gallery)
+    var lbOnly = [];
     for (var j = 0; j < lbData.length; j++) {
       var key = lbData[j].name + '|' + lbData[j].score;
-      if (!galleryKeys[key]) {
-        lbData[j]._hasShape = false;
-        merged.push(lbData[j]);
+      if (!galleryKeys[key]) lbOnly.push(lbData[j]);
+    }
+
+    // Aggregate leaderboard-only entries into cluster nodes by score range
+    var SCORE_BINS = [1, 3, 6, 10, 15, 25, 50, Infinity];
+    var clusters = [];
+    for (var b = 0; b < SCORE_BINS.length; b++) {
+      var lo = b === 0 ? 1 : SCORE_BINS[b - 1];
+      var hi = SCORE_BINS[b];
+      var members = [];
+      for (var k = 0; k < lbOnly.length; k++) {
+        var s = lbOnly[k].score || 0;
+        if (s >= lo && s < hi) members.push(lbOnly[k]);
+      }
+      if (members.length > 0) {
+        var totalScore = 0;
+        for (var m = 0; m < members.length; m++) totalScore += members[m].score || 0;
+        var label = hi === Infinity ? (lo + '+') : (lo + '-' + (hi - 1));
+        clusters.push({
+          name: members.length + ' neurons (score ' + label + ')',
+          score: totalScore,
+          _hasShape: false,
+          _isCluster: true,
+          _clusterCount: members.length,
+          _clusterAvg: Math.round(totalScore / members.length * 10) / 10,
+          created_at: members[0].created_at
+        });
       }
     }
 
-    // Sort by score descending
+    // Gallery entries as individual nodes + cluster nodes
+    var merged = galleryData.slice();
+    for (var c = 0; c < clusters.length; c++) merged.push(clusters[c]);
     merged.sort(function(a, b) { return (b.score || 0) - (a.score || 0); });
+
+    // Track total neuron count (individuals + all clustered)
+    var totalNeuronCount = galleryData.length + lbOnly.length;
 
     if (!merged.length) {
       document.querySelector('#loading .loadText').textContent = 'NO NEURONS FOUND';
       return;
     }
-    initNetwork(merged);
+    initNetwork(merged, totalNeuronCount);
     document.getElementById('loading').style.display = 'none';
   });
 
-  function initNetwork(data) {
+  function initNetwork(data, totalNeuronCount) {
     // Build nodes
     var totalSynapses = 0;
     for (var i = 0; i < data.length; i++) {
@@ -437,11 +466,15 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
       var angle = (i / data.length) * Math.PI * 2;
       var cx = W / 2, cy = (H + 130) / 2;
       var spread = Math.min(W, H) * 0.25;
+      // Cluster nodes are bigger — radius proportional to sqrt of member count
+      var r = d._isCluster
+        ? Math.max(8, Math.sqrt(d._clusterCount) * 2.5)
+        : Math.max(5, Math.sqrt(d.score || 1) * 2);
       nodes.push({
         x: cx + Math.cos(angle) * spread + (Math.random() - 0.5) * 40,
         y: cy + Math.sin(angle) * spread + (Math.random() - 0.5) * 40,
         vx: 0, vy: 0,
-        radius: Math.max(5, Math.sqrt(d.score || 1) * 2),
+        radius: r,
         data: d,
         prerender: null,
         edgeIndices: []
@@ -451,8 +484,8 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
     // Build edges
     buildEdges();
 
-    // Update stats
-    var neuronCount = nodes.length;
+    // Update stats — use real total (includes clustered neurons)
+    var neuronCount = totalNeuronCount || nodes.length;
     document.getElementById('neuronCount').textContent = neuronCount;
     document.getElementById('synapseCount').textContent = totalSynapses.toLocaleString();
     document.getElementById('popCount').textContent = getActivePopulations(neuronCount).length + '/' + POPULATIONS.length;
@@ -650,7 +683,33 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
     oc.width = size; oc.height = size;
     var ctx = oc.getContext('2d');
 
-    // Leaderboard-only entries: render as a glowing soma circle
+    // Cluster nodes: render as a glowing multi-soma cluster
+    if (data._isCluster) {
+      var cx = size / 2, cy = size / 2, r = size * 0.4;
+      // Outer glow
+      var glow = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r);
+      glow.addColorStop(0, 'rgba(100,200,255,0.6)');
+      glow.addColorStop(0.6, 'rgba(40,120,200,0.3)');
+      glow.addColorStop(1, 'rgba(4,20,70,0)');
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = glow; ctx.fill();
+      // Inner scattered mini-somas
+      var count = Math.min(data._clusterCount, 12);
+      for (var si = 0; si < count; si++) {
+        var a = (si / count) * Math.PI * 2 + Math.random() * 0.5;
+        var dist = r * (0.15 + Math.random() * 0.45);
+        var sx = cx + Math.cos(a) * dist;
+        var sy = cy + Math.sin(a) * dist;
+        var sr = size * (0.06 + Math.random() * 0.04);
+        var sg = ctx.createRadialGradient(sx, sy - sr * 0.1, 0, sx, sy, sr);
+        sg.addColorStop(0, 'rgba(140,220,255,0.9)');
+        sg.addColorStop(0.5, 'rgba(40,130,220,0.7)');
+        sg.addColorStop(1, 'rgba(4,20,70,0.3)');
+        ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fillStyle = sg; ctx.fill();
+      }
+      return oc;
+    }
+
+    // Single leaderboard entry without shape: simple soma circle
     if (!data._hasShape) {
       var cx = size / 2, cy = size / 2, r = size * 0.35;
       var fg = ctx.createRadialGradient(cx, cy - r * 0.1, 0, cx, cy, r);
@@ -1091,8 +1150,13 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
     var tooltip = document.getElementById('tooltip');
     if (hoveredNode >= 0) {
       var nd = nodes[hoveredNode];
-      document.getElementById('ttName').textContent = (nd.data.name || 'ANON').toUpperCase();
-      document.getElementById('ttScore').textContent = nd.data.score + ' SYNAPSES';
+      if (nd.data._isCluster) {
+        document.getElementById('ttName').textContent = nd.data._clusterCount + ' NEURONS';
+        document.getElementById('ttScore').textContent = 'AVG SCORE ' + nd.data._clusterAvg + ' · ' + nd.data.score + ' TOTAL SYNAPSES';
+      } else {
+        document.getElementById('ttName').textContent = (nd.data.name || 'ANON').toUpperCase();
+        document.getElementById('ttScore').textContent = nd.data.score + ' SYNAPSES';
+      }
       var ttPop = document.getElementById('ttPop');
       if (nd.population) {
         var pc = nd.population.color;

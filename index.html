@@ -410,7 +410,7 @@ function runGame() {
     opts = opts || {};
     var lim = opts.limit || LB_PAGE_SIZE;
     var hours = opts.hours || 0; // 0 = all time
-    var query = sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(lim).gt('score', 0);
+    var query = sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(lim).gt('score', 0).or('flagged.is.null,flagged.eq.false');
     if (plat) query = query.eq('platform', plat);
     if (hours > 0) {
       var since = new Date(Date.now() - hours * 3600000).toISOString();
@@ -428,22 +428,53 @@ function runGame() {
   }
 
   function fetchAllTimeTop(plat, callback) {
-    var query = sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(1);
+    var query = sb.from('neuron_snake_leaderboard').select('name,score').order('score', {ascending: false}).limit(1).or('flagged.is.null,flagged.eq.false');
     if (plat) query = query.eq('platform', plat);
     query.then(function(res) {
       callback(res.data && res.data[0] ? res.data[0] : null);
     }).catch(function() { callback(null); });
   }
 
+  // ── Anti-bot: compute input timing metrics ──
+  function computeTimingMetrics() {
+    var m = {mean_interval: 0, std_interval: 0, min_interval: 9999, total_inputs: inputLog.length, duration_ms: Date.now() - gameStartTime, total_steps: totalSteps, flagged: false};
+    if (inputLog.length < 2) return m;
+    var intervals = [];
+    for (var i = 1; i < inputLog.length; i++) intervals.push(inputLog[i] - inputLog[i - 1]);
+    // Mean
+    var sum = 0;
+    for (var j = 0; j < intervals.length; j++) sum += intervals[j];
+    m.mean_interval = Math.round(sum / intervals.length);
+    // Std deviation
+    var sqSum = 0;
+    for (var k = 0; k < intervals.length; k++) sqSum += (intervals[k] - m.mean_interval) * (intervals[k] - m.mean_interval);
+    m.std_interval = Math.round(Math.sqrt(sqSum / intervals.length));
+    // Min
+    for (var l = 0; l < intervals.length; l++) { if (intervals[l] < m.min_interval) m.min_interval = intervals[l]; }
+    // Bot detection heuristics
+    if (m.std_interval < 20 && intervals.length > 5) m.flagged = true;        // too regular
+    if (m.min_interval < 30 && intervals.length > 5) m.flagged = true;        // inhuman speed
+    if (m.mean_interval < 50 && intervals.length > 10) m.flagged = true;      // inputting nearly every tick
+    if (m.duration_ms > 0 && m.total_inputs > 0) {
+      var inputRate = m.total_inputs / (m.duration_ms / 1000);
+      if (inputRate > 15 && m.total_inputs > 10) m.flagged = true;            // >15 inputs/sec sustained
+    }
+    // Plausibility: score vs duration (each synapse needs ~15+ steps minimum at 30-65ms each)
+    if (score > 0 && m.duration_ms < score * 500) m.flagged = true;           // impossibly fast
+    return m;
+  }
+
   function submitScore(name, sc, callback) {
     playerName = name;
     localStorage.setItem('neuron_name', name);
-    var row = {name: name, score: sc, platform: platform};
+    var metrics = computeTimingMetrics();
+    var row = {name: name, score: sc, platform: platform, duration_ms: metrics.duration_ms, total_inputs: metrics.total_inputs, mean_interval: metrics.mean_interval, std_interval: metrics.std_interval, flagged: metrics.flagged};
     if (countryCode) row.country_code = countryCode;
     sb.from('neuron_snake_leaderboard').insert(row)
       .then(function(res) {
         if (res.error) {
-          return sb.from('neuron_snake_leaderboard').insert({name: name, score: sc});
+          // Fallback without new columns (backwards compat during migration)
+          return sb.from('neuron_snake_leaderboard').insert({name: name, score: sc, platform: platform});
         }
       })
       .then(function() { callback(); })
@@ -689,6 +720,12 @@ function runGame() {
   var stripeHasPurchasedBefore = !!localStorage.getItem('neuron_stripe_bought');
   var stripeTier = stripeHasPurchasedBefore ? 2 : 1;
 
+  // ── Anti-bot: input timing tracking ──
+  var inputLog = [];       // timestamps of direction changes
+  var gameStartTime = 0;   // Date.now() when game starts
+  var totalSteps = 0;      // game ticks elapsed
+  var sessionId = '';       // random id per game session
+
   // ── Audio Engine (Web Audio API — no files needed) ──
   var audioCtx = null;
   var audioMuted = localStorage.getItem('neuron_muted') === '1';
@@ -700,8 +737,14 @@ function runGame() {
     try {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       bgmGain = audioCtx.createGain();
-      bgmGain.gain.value = audioMuted ? 0 : 0.12;
-      bgmGain.connect(audioCtx.destination);
+      bgmGain.gain.value = audioMuted ? 0 : 0.5;
+      // Master warmth filter — cuts harsh highs for lo-fi ambient feel
+      var masterLP = audioCtx.createBiquadFilter();
+      masterLP.type = 'lowpass';
+      masterLP.frequency.value = 3000; // nothing above 3kHz — warm and cozy
+      masterLP.Q.value = 0.5;
+      bgmGain.connect(masterLP);
+      masterLP.connect(audioCtx.destination);
     } catch(e) {}
   }
 
@@ -853,71 +896,381 @@ function runGame() {
     if (!audioCtx || bgmStarted) return;
     bgmStarted = true;
 
-    // Warm pad: layered fifths with slow detuning
+    // ── Reverb bus — algorithmic reverb via generated impulse response ──
+    var reverbLen = 5.0; // seconds — long tail for spacious feel
+    var reverbBuf = audioCtx.createBuffer(2, audioCtx.sampleRate * reverbLen, audioCtx.sampleRate);
+    for (var ch = 0; ch < 2; ch++) {
+      var rd = reverbBuf.getChannelData(ch);
+      for (var ri = 0; ri < rd.length; ri++) {
+        // Exponential decay with diffusion
+        rd[ri] = (Math.random() * 2 - 1) * Math.pow(1 - ri / rd.length, 2.2);
+      }
+    }
+    var reverb = audioCtx.createConvolver();
+    reverb.buffer = reverbBuf;
+    var reverbGain = audioCtx.createGain();
+    reverbGain.gain.value = 0.5; // wet level — generous for ambient depth
+    reverb.connect(reverbGain);
+    reverbGain.connect(bgmGain);
+    // Dry+wet bus: connect sources to both bgmGain (dry) and reverb (wet)
+    var reverbSend = reverb; // alias for clarity
+
+    // Warm pad: layered fifths with chorus detuning for richness
     var padNotes = [65.41, 98.00, 130.81, 196.00]; // C2, G2, C3, G3
     var padOscs = [];
     for (var i = 0; i < padNotes.length; i++) {
+      // Main voice — triangle for warmer timbre than sine
       var oi = audioCtx.createOscillator();
       var gi = audioCtx.createGain();
-      oi.type = 'sine';
+      oi.type = 'triangle';
       oi.frequency.value = padNotes[i];
-      gi.gain.value = 0.018;
+      gi.gain.value = 0.020;
       oi.connect(gi);
       gi.connect(bgmGain);
+      gi.connect(reverbSend);
       oi.start();
-      padOscs.push({o: oi, g: gi, base: padNotes[i]});
+      // Detuned chorus voice — slightly sharp for width
+      var oi2 = audioCtx.createOscillator();
+      var gi2 = audioCtx.createGain();
+      oi2.type = 'triangle';
+      oi2.frequency.value = padNotes[i] * 1.003; // ~5 cents sharp
+      gi2.gain.value = 0.014;
+      oi2.connect(gi2);
+      gi2.connect(bgmGain);
+      gi2.connect(reverbSend);
+      oi2.start();
+      // Third voice — slightly flat for full stereo-like chorus
+      var oi3 = audioCtx.createOscillator();
+      var gi3 = audioCtx.createGain();
+      oi3.type = 'triangle';
+      oi3.frequency.value = padNotes[i] * 0.997; // ~5 cents flat
+      gi3.gain.value = 0.012;
+      oi3.connect(gi3);
+      gi3.connect(bgmGain);
+      gi3.connect(reverbSend);
+      oi3.start();
+      padOscs.push({o: oi, o2: oi2, o3: oi3, g: gi, g2: gi2, g3: gi3, base: padNotes[i]});
     }
 
-    // Gentle shimmer layer — high harmonics that breathe
-    var shimmer = audioCtx.createOscillator();
-    var shimGain = audioCtx.createGain();
-    shimmer.type = 'sine';
-    shimmer.frequency.value = 523.25; // C5
-    shimGain.gain.value = 0;
-    shimmer.connect(shimGain);
-    shimGain.connect(bgmGain);
-    shimmer.start();
-
-    // Shimmer breathes in and out
-    function breathe() {
+    // ── Kalimba jingle — short catchy motif that loops, like a music box ──
+    // Two alternating 4-bar phrases in C pentatonic — memorable and hummable
+    var jingleA = [
+      {freq: 523.25, t: 0.0,   len: 0.4},  // C5
+      {freq: 659.25, t: 0.5,   len: 0.3},  // E5
+      {freq: 783.99, t: 1.0,   len: 0.5},  // G5 — hold
+      {freq: 659.25, t: 2.0,   len: 0.3},  // E5
+      {freq: 587.33, t: 2.5,   len: 0.4},  // D5
+      {freq: 523.25, t: 3.2,   len: 0.6},  // C5 — resolve
+      {freq: 440.00, t: 4.5,   len: 0.3},  // A4
+      {freq: 523.25, t: 5.2,   len: 0.8},  // C5 — home
+    ];
+    var jingleB = [
+      {freq: 783.99, t: 0.0,   len: 0.3},  // G5
+      {freq: 659.25, t: 0.4,   len: 0.3},  // E5
+      {freq: 523.25, t: 0.9,   len: 0.4},  // C5
+      {freq: 440.00, t: 1.6,   len: 0.5},  // A4
+      {freq: 523.25, t: 2.5,   len: 0.3},  // C5
+      {freq: 587.33, t: 3.0,   len: 0.3},  // D5
+      {freq: 659.25, t: 3.5,   len: 0.4},  // E5
+      {freq: 783.99, t: 4.2,   len: 0.3},  // G5
+      {freq: 523.25, t: 5.0,   len: 1.0},  // C5 — long resolve
+    ];
+    var jingleCycle = 0;
+    function playKalimbaTone(freq, startT, dur) {
+      // Kalimba timbre: sharp attack, quick fundamental decay, lingering harmonic
+      var o1 = audioCtx.createOscillator();
+      var g1 = audioCtx.createGain();
+      o1.type = 'sine';
+      o1.frequency.value = freq;
+      var vol = 0.030 + Math.random() * 0.012;
+      g1.gain.setValueAtTime(vol, startT);
+      g1.gain.setValueAtTime(vol * 0.7, startT + 0.02); // slight dip after pluck
+      g1.gain.exponentialRampToValueAtTime(vol * 0.4, startT + 0.1);
+      g1.gain.exponentialRampToValueAtTime(0.001, startT + dur + 1.2);
+      o1.connect(g1); g1.connect(bgmGain); g1.connect(reverbSend);
+      o1.start(startT); o1.stop(startT + dur + 1.4);
+      // Octave above — quieter, decays faster (gives the "tink" sound)
+      var o2 = audioCtx.createOscillator();
+      var g2 = audioCtx.createGain();
+      o2.type = 'sine';
+      o2.frequency.value = freq * 2;
+      g2.gain.setValueAtTime(vol * 0.25, startT);
+      g2.gain.exponentialRampToValueAtTime(0.001, startT + dur * 0.5 + 0.3);
+      o2.connect(g2); g2.connect(bgmGain); g2.connect(reverbSend);
+      o2.start(startT); o2.stop(startT + dur + 0.5);
+      // Sub fundamental for body
+      var o3 = audioCtx.createOscillator();
+      var g3 = audioCtx.createGain();
+      o3.type = 'sine';
+      o3.frequency.value = freq / 2;
+      g3.gain.setValueAtTime(vol * 0.15, startT);
+      g3.gain.exponentialRampToValueAtTime(0.001, startT + dur + 0.8);
+      o3.connect(g3); g3.connect(bgmGain); g3.connect(reverbSend);
+      o3.start(startT); o3.stop(startT + dur + 1.0);
+    }
+    function playJingle() {
       if (!audioCtx || audioCtx.state === 'closed') return;
       var t = audioCtx.currentTime;
-      // Pick a happy pentatonic note (C maj pentatonic: C, D, E, G, A)
-      var shimNotes = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66];
-      shimmer.frequency.setTargetAtTime(shimNotes[Math.floor(Math.random() * shimNotes.length)], t, 0.5);
-      shimGain.gain.setTargetAtTime(0.008 + Math.random() * 0.006, t, 1.5);
-      shimGain.gain.setTargetAtTime(0.001, t + 3, 2);
-      setTimeout(breathe, 4000 + Math.random() * 4000);
+      var phrase = (jingleCycle % 2 === 0) ? jingleA : jingleB;
+      jingleCycle++;
+      for (var ji = 0; ji < phrase.length; ji++) {
+        var n = phrase[ji];
+        // Subtle timing humanization
+        var off = n.t + (Math.random() - 0.5) * 0.04;
+        // Occasionally skip a note for breathing (never first or last)
+        if (ji > 0 && ji < phrase.length - 1 && Math.random() < 0.12) continue;
+        playKalimbaTone(n.freq, t + off, n.len);
+      }
+      // Gap between phrases — 8-14 seconds total cycle
+      var phraseEnd = phrase[phrase.length - 1].t + phrase[phrase.length - 1].len;
+      var gap = 3 + Math.random() * 5;
+      setTimeout(playJingle, (phraseEnd + gap) * 1000);
     }
-    breathe();
+    setTimeout(playJingle, 2000);
 
-    // Pentatonic chime drops — random gentle bell tones
-    var chimeNotes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
-    function chime() {
+    // Composed melody — sparse Minecraft-like piano motif over ambient bed
+    // C major pentatonic phrase, loops with subtle variation
+    var melodyPhrase = [
+      {freq: 329.63, delay: 0},      // E4 — hopeful open
+      {freq: 392.00, delay: 3.2},    // G4
+      {freq: 523.25, delay: 6.5},    // C5 — breathe
+      {freq: 587.33, delay: 11.0},   // D5 — gentle descent
+      {freq: 440.00, delay: 13.5},   // A4
+      {freq: 392.00, delay: 18.0},   // G4 — leap up
+      {freq: 659.25, delay: 20.5},   // E5
+      {freq: 587.33, delay: 24.0},   // D5 — step down
+      {freq: 523.25, delay: 26.5},   // C5
+      {freq: 440.00, delay: 30.0},   // A4 — resolve
+      {freq: 523.25, delay: 34.0}    // C5 — home
+    ];
+    var melodyLen = 40; // seconds per cycle
+    function playMelody() {
       if (!audioCtx || audioCtx.state === 'closed') return;
       var t = audioCtx.currentTime;
-      var freq = chimeNotes[Math.floor(Math.random() * chimeNotes.length)];
-      // Main tone
-      var co = audioCtx.createOscillator();
-      var cg = audioCtx.createGain();
-      co.type = 'sine';
-      co.frequency.value = freq;
-      cg.gain.setValueAtTime(0.03 + Math.random() * 0.02, t);
-      cg.gain.exponentialRampToValueAtTime(0.001, t + 2.5);
-      co.connect(cg); cg.connect(bgmGain);
-      co.start(t); co.stop(t + 2.5);
-      // Soft octave harmonic
-      var co2 = audioCtx.createOscillator();
-      var cg2 = audioCtx.createGain();
-      co2.type = 'sine';
-      co2.frequency.value = freq * 2;
-      cg2.gain.setValueAtTime(0.012, t + 0.05);
-      cg2.gain.exponentialRampToValueAtTime(0.001, t + 1.8);
-      co2.connect(cg2); cg2.connect(bgmGain);
-      co2.start(t + 0.05); co2.stop(t + 1.8);
-      setTimeout(chime, 2000 + Math.random() * 5000);
+      for (var mi = 0; mi < melodyPhrase.length; mi++) {
+        // Occasionally skip a note for variation (15% chance, never skip first or last)
+        if (mi > 0 && mi < melodyPhrase.length - 1 && Math.random() < 0.15) continue;
+        var note = melodyPhrase[mi];
+        var offset = note.delay + (Math.random() - 0.5) * 0.15; // subtle timing humanization
+        var vol = 0.035 + Math.random() * 0.015; // vary velocity
+        // Occasionally shift octave (20% chance)
+        var freq = note.freq;
+        if (Math.random() < 0.2) freq = Math.random() < 0.5 ? freq * 2 : freq / 2;
+        // Rich piano tone — fundamental + 4 harmonics with natural decay
+        var harmonics = [
+          {mult: 1,   vol: 1.0,  decay: 3.0},   // fundamental
+          {mult: 2,   vol: 0.35, decay: 2.4},   // octave
+          {mult: 3,   vol: 0.15, decay: 1.8},   // 5th above octave
+          {mult: 4,   vol: 0.08, decay: 1.4},   // 2 octaves
+          {mult: 5,   vol: 0.04, decay: 1.0}    // major 3rd high — adds brightness
+        ];
+        for (var hi = 0; hi < harmonics.length; hi++) {
+          var h = harmonics[hi];
+          var ho = audioCtx.createOscillator();
+          var hg = audioCtx.createGain();
+          ho.type = 'sine';
+          ho.frequency.value = freq * h.mult;
+          hg.gain.setValueAtTime(vol * h.vol, t + offset);
+          hg.gain.exponentialRampToValueAtTime(0.001, t + offset + h.decay);
+          ho.connect(hg); hg.connect(bgmGain); hg.connect(reverbSend);
+          ho.start(t + offset); ho.stop(t + offset + h.decay + 0.1);
+        }
+        // Soft percussive attack — filtered noise burst for piano hammer feel
+        var attackLen = 0.04;
+        var ab = audioCtx.createBufferSource();
+        var abuf = audioCtx.createBuffer(1, audioCtx.sampleRate * attackLen, audioCtx.sampleRate);
+        var adata = abuf.getChannelData(0);
+        for (var ai = 0; ai < adata.length; ai++) adata[ai] = (Math.random() * 2 - 1) * Math.pow(1 - ai / adata.length, 3);
+        ab.buffer = abuf;
+        var abg = audioCtx.createGain();
+        abg.gain.setValueAtTime(vol * 0.4, t + offset);
+        abg.gain.exponentialRampToValueAtTime(0.001, t + offset + attackLen);
+        var abf = audioCtx.createBiquadFilter();
+        abf.type = 'bandpass';
+        abf.frequency.value = freq * 2;
+        abf.Q.value = 2;
+        ab.connect(abf); abf.connect(abg); abg.connect(bgmGain); abg.connect(reverbSend);
+        ab.start(t + offset); ab.stop(t + offset + attackLen);
+      }
+      // Loop with slight variation in cycle length
+      setTimeout(playMelody, (melodyLen + (Math.random() - 0.5) * 4) * 1000);
     }
-    setTimeout(chime, 1500);
+    setTimeout(playMelody, 1500);
+
+    // ── Counter-melody — answering phrase, plays in the gaps of main melody ──
+    var counterPhrase = [
+      {freq: 196.00, delay: 2.0},    // G3 — low answer
+      {freq: 261.63, delay: 5.5},    // C4
+      {freq: 329.63, delay: 9.0},    // E4
+      {freq: 293.66, delay: 15.0},   // D4
+      {freq: 261.63, delay: 21.0},   // C4
+      {freq: 196.00, delay: 28.0},   // G3 — back to base
+      {freq: 220.00, delay: 33.0}    // A3
+    ];
+    function playCounter() {
+      if (!audioCtx || audioCtx.state === 'closed') return;
+      var t = audioCtx.currentTime;
+      for (var ci = 0; ci < counterPhrase.length; ci++) {
+        if (Math.random() < 0.2) continue; // skip some for variation
+        var cn = counterPhrase[ci];
+        var coff = cn.delay + (Math.random() - 0.5) * 0.2;
+        var cvol = 0.018 + Math.random() * 0.008; // quieter than main melody
+        var cfreq = cn.freq;
+        // Main tone — triangle for softer timbre
+        var cmo = audioCtx.createOscillator();
+        var cmg = audioCtx.createGain();
+        cmo.type = 'triangle';
+        cmo.frequency.value = cfreq;
+        cmg.gain.setValueAtTime(cvol, t + coff);
+        cmg.gain.exponentialRampToValueAtTime(0.001, t + coff + 3.5);
+        cmo.connect(cmg); cmg.connect(bgmGain); cmg.connect(reverbSend);
+        cmo.start(t + coff); cmo.stop(t + coff + 3.7);
+        // Octave harmonic
+        var cho = audioCtx.createOscillator();
+        var chg = audioCtx.createGain();
+        cho.type = 'sine';
+        cho.frequency.value = cfreq * 2;
+        chg.gain.setValueAtTime(cvol * 0.25, t + coff + 0.02);
+        chg.gain.exponentialRampToValueAtTime(0.001, t + coff + 2.5);
+        cho.connect(chg); chg.connect(bgmGain); chg.connect(reverbSend);
+        cho.start(t + coff + 0.02); cho.stop(t + coff + 2.7);
+      }
+      setTimeout(playCounter, (melodyLen + (Math.random() - 0.5) * 6) * 1000);
+    }
+    setTimeout(playCounter, melodyLen / 2 * 1000); // offset from main melody
+
+    // ── Gentle arpeggio texture — warm, lower register ──
+    var arpNotes = [261.63, 329.63, 392.00, 523.25, 659.25]; // C4 E4 G4 C5 E5
+    var arpIdx = 0;
+    function arpTick() {
+      if (!audioCtx || audioCtx.state === 'closed') return;
+      var t = audioCtx.currentTime;
+      var afreq = arpNotes[arpIdx];
+      arpIdx = (arpIdx + 1) % arpNotes.length;
+      // Occasionally reset or jump for variation
+      if (Math.random() < 0.1) arpIdx = Math.floor(Math.random() * arpNotes.length);
+      var ao = audioCtx.createOscillator();
+      var ag = audioCtx.createGain();
+      ao.type = 'sine';
+      ao.frequency.value = afreq;
+      ag.gain.setValueAtTime(0.012 + Math.random() * 0.006, t);
+      ag.gain.exponentialRampToValueAtTime(0.001, t + 1.8);
+      ao.connect(ag); ag.connect(bgmGain); ag.connect(reverbSend);
+      ao.start(t); ao.stop(t + 2.0);
+      // Vary timing — mostly slow with occasional faster pairs
+      var nextDelay = 1800 + Math.random() * 2500;
+      if (Math.random() < 0.2) nextDelay = 400 + Math.random() * 300; // quick double
+      setTimeout(arpTick, nextDelay);
+    }
+    setTimeout(arpTick, 5000);
+
+    // ── Warm noise floor — filtered noise like distant rain or vinyl warmth ──
+    var noiseBufLen = audioCtx.sampleRate * 2;
+    var noiseBuf = audioCtx.createBuffer(1, noiseBufLen, audioCtx.sampleRate);
+    var noiseData = noiseBuf.getChannelData(0);
+    for (var ni = 0; ni < noiseBufLen; ni++) noiseData[ni] = Math.random() * 2 - 1;
+    var noiseNode = audioCtx.createBufferSource();
+    noiseNode.buffer = noiseBuf;
+    noiseNode.loop = true;
+    // Bandpass to keep only warm mid-highs
+    var noiseFilt = audioCtx.createBiquadFilter();
+    noiseFilt.type = 'bandpass';
+    noiseFilt.frequency.value = 800;
+    noiseFilt.Q.value = 0.5;
+    var noiseGn = audioCtx.createGain();
+    noiseGn.gain.value = 0.012; // subtle warmth
+    noiseNode.connect(noiseFilt);
+    noiseFilt.connect(noiseGn);
+    noiseGn.connect(bgmGain);
+    noiseNode.start();
+    // Slowly modulate noise filter frequency for movement
+    function noiseShift() {
+      if (!audioCtx || audioCtx.state === 'closed') return;
+      noiseFilt.frequency.setTargetAtTime(500 + Math.random() * 1200, audioCtx.currentTime, 4);
+      noiseGn.gain.setTargetAtTime(0.005 + Math.random() * 0.008, audioCtx.currentTime, 3);
+      setTimeout(noiseShift, 6000 + Math.random() * 6000);
+    }
+    noiseShift();
+
+    // ── Evolving string pad — warm mid-range layer like distant strings ──
+    // Sawtooth through lowpass filter = warm analog string sound
+    var stringNotes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5 — major chord
+    var stringOscs = [];
+    for (var si = 0; si < stringNotes.length; si++) {
+      var so = audioCtx.createOscillator();
+      so.type = 'sawtooth';
+      so.frequency.value = stringNotes[si];
+      // Lowpass filter to tame brightness — keeps it soft
+      var sf = audioCtx.createBiquadFilter();
+      sf.type = 'lowpass';
+      sf.frequency.value = 600 + si * 100; // higher strings get slightly brighter
+      sf.Q.value = 0.7;
+      var sg = audioCtx.createGain();
+      sg.gain.value = 0.006; // quiet — felt as warmth, not heard as a distinct voice
+      so.connect(sf); sf.connect(sg);
+      sg.connect(bgmGain); sg.connect(reverbSend);
+      so.start();
+      // Detuned pair for ensemble width
+      var so2 = audioCtx.createOscillator();
+      so2.type = 'sawtooth';
+      so2.frequency.value = stringNotes[si] * 1.002;
+      var sf2 = audioCtx.createBiquadFilter();
+      sf2.type = 'lowpass';
+      sf2.frequency.value = 550 + si * 100;
+      sf2.Q.value = 0.7;
+      var sg2 = audioCtx.createGain();
+      sg2.gain.value = 0.004;
+      so2.connect(sf2); sf2.connect(sg2);
+      sg2.connect(bgmGain); sg2.connect(reverbSend);
+      so2.start();
+      stringOscs.push({o: so, o2: so2, f: sf, f2: sf2, g: sg, g2: sg2, base: stringNotes[si]});
+    }
+    // Strings slowly evolve — filter opens and closes like bowing
+    function stringBreathe() {
+      if (!audioCtx || audioCtx.state === 'closed') return;
+      var t = audioCtx.currentTime;
+      for (var sk = 0; sk < stringOscs.length; sk++) {
+        var cutoff = 400 + Math.random() * 800;
+        stringOscs[sk].f.frequency.setTargetAtTime(cutoff, t, 4);
+        stringOscs[sk].f2.frequency.setTargetAtTime(cutoff * 0.9, t, 5);
+        stringOscs[sk].g.gain.setTargetAtTime(0.004 + Math.random() * 0.006, t, 3);
+        stringOscs[sk].g2.gain.setTargetAtTime(0.003 + Math.random() * 0.004, t, 3);
+      }
+      setTimeout(stringBreathe, 5000 + Math.random() * 5000);
+    }
+    stringBreathe();
+
+    // ── Deep drone swells — warm low tones that rise and fall like breathing ──
+    var droneNotes = [65.41, 82.41, 98.00, 110.00]; // C2, E2, G2, A2
+    function droneSwell() {
+      if (!audioCtx || audioCtx.state === 'closed') return;
+      var t = audioCtx.currentTime;
+      var dfreq = droneNotes[Math.floor(Math.random() * droneNotes.length)];
+      var dvol = 0.015 + Math.random() * 0.010;
+      var dlen = 6 + Math.random() * 4; // 6-10s swell
+      // Main drone — triangle for warmth
+      var dr = audioCtx.createOscillator();
+      var drg = audioCtx.createGain();
+      dr.type = 'triangle';
+      dr.frequency.value = dfreq;
+      drg.gain.setValueAtTime(0.001, t);
+      drg.gain.linearRampToValueAtTime(dvol, t + dlen * 0.4); // slow rise
+      drg.gain.linearRampToValueAtTime(0.001, t + dlen); // slow fade
+      dr.connect(drg); drg.connect(bgmGain); drg.connect(reverbSend);
+      dr.start(t); dr.stop(t + dlen + 0.2);
+      // Fifth above for harmonic richness
+      var dr2 = audioCtx.createOscillator();
+      var drg2 = audioCtx.createGain();
+      dr2.type = 'sine';
+      dr2.frequency.value = dfreq * 1.5;
+      drg2.gain.setValueAtTime(0.001, t);
+      drg2.gain.linearRampToValueAtTime(dvol * 0.3, t + dlen * 0.45);
+      drg2.gain.linearRampToValueAtTime(0.001, t + dlen);
+      dr2.connect(drg2); drg2.connect(bgmGain); drg2.connect(reverbSend);
+      dr2.start(t); dr2.stop(t + dlen + 0.2);
+      setTimeout(droneSwell, (dlen + 2 + Math.random() * 6) * 1000);
+    }
+    setTimeout(droneSwell, 3000);
 
     // Slow evolving pad drift
     function drift() {
@@ -926,8 +1279,12 @@ function runGame() {
       for (var j = 0; j < padOscs.length; j++) {
         var detune = (Math.random() - 0.5) * 6;
         padOscs[j].o.frequency.setTargetAtTime(padOscs[j].base + detune, t, 3);
+        padOscs[j].o2.frequency.setTargetAtTime(padOscs[j].base * 1.003 - detune, t, 3);
+        padOscs[j].o3.frequency.setTargetAtTime(padOscs[j].base * 0.997 + detune * 0.5, t, 3);
         // Gently vary individual pad volumes for movement
-        padOscs[j].g.gain.setTargetAtTime(0.012 + Math.random() * 0.012, t, 2);
+        padOscs[j].g.gain.setTargetAtTime(0.014 + Math.random() * 0.012, t, 2);
+        padOscs[j].g2.gain.setTargetAtTime(0.008 + Math.random() * 0.010, t, 2);
+        padOscs[j].g3.gain.setTargetAtTime(0.006 + Math.random() * 0.010, t, 2);
       }
       setTimeout(drift, 4000 + Math.random() * 3000);
     }
@@ -938,7 +1295,7 @@ function runGame() {
     var subGain = audioCtx.createGain();
     sub.type = 'sine';
     sub.frequency.value = 55; // A1
-    subGain.gain.value = 0.025;
+    subGain.gain.value = 0.015;
     sub.connect(subGain);
     subGain.connect(bgmGain);
     sub.start();
@@ -962,7 +1319,7 @@ function runGame() {
   function toggleMute() {
     audioMuted = !audioMuted;
     localStorage.setItem('neuron_muted', audioMuted ? '1' : '0');
-    if (bgmGain) bgmGain.gain.value = audioMuted ? 0 : 0.12;
+    if (bgmGain) bgmGain.gain.value = audioMuted ? 0 : 0.5;
     var muteBtn = document.getElementById('muteBtn');
     if (muteBtn) muteBtn.textContent = audioMuted ? '🔇' : '🔊';
   }
@@ -973,6 +1330,8 @@ function runGame() {
 
   function initGame() {
     score = 0; gallerySaved = false; nextBonusAt = BONUS_LIFE_THRESHOLD;
+    inputLog = []; gameStartTime = Date.now(); totalSteps = 0;
+    sessionId = Math.random().toString(36).slice(2) + Date.now().toString(36);
     branches = [];
     activeIdx = 0;
     dots = [];
@@ -1083,6 +1442,7 @@ function runGame() {
       if (ndy === -b.dirY && b.dirY !== 0) { ndx = ddx >= 0 ? 1 : -1; ndy = 0; }
     }
     pendDX = ndx; pendDY = ndy; hasPend = true;
+    if (gState === 'playing' && !isDemo) inputLog.push(Date.now());
   }
 
   canvas.addEventListener('touchstart', function(e) {
@@ -1110,6 +1470,7 @@ function runGame() {
     if (ndx !== 0 && b.dirX !== 0) return;
     if (ndy !== 0 && b.dirY !== 0) return;
     pendDX = ndx; pendDY = ndy; hasPend = true;
+    if (gState === 'playing' && !isDemo) inputLog.push(Date.now());
   });
 
   // Returns true if (x,y) is on any branch OTHER than activeIdx, or is soma-blocked area
@@ -1331,7 +1692,7 @@ function runGame() {
         setTimeout((function(d) { return function() { d.remove(); }; })(dot), 400);
       }
       setTimeout(function() { wrap.remove(); callback(); }, 420);
-    }, 1100);
+    }, 650);
   }
 
   function nextBranch() {
@@ -1418,7 +1779,7 @@ function runGame() {
 
   function doFullDeath() {
     sfx('death');
-    if (bgmGain && !audioMuted) bgmGain.gain.setTargetAtTime(0.03, audioCtx.currentTime, 0.5);
+    if (bgmGain && !audioMuted) bgmGain.gain.setTargetAtTime(0.12, audioCtx.currentTime, 0.5);
     isDead = true;
     gState = 'dead';
     frozenBranches = branches.slice();
@@ -2435,7 +2796,7 @@ function runGame() {
       gState = 'playing';
       ensureAudio();
       sfx('start');
-      if (bgmStarted && bgmGain && !audioMuted) bgmGain.gain.setTargetAtTime(0.12, audioCtx.currentTime, 0.3);
+      if (bgmStarted && bgmGain && !audioMuted) bgmGain.gain.setTargetAtTime(0.5, audioCtx.currentTime, 0.3);
       else startBGM();
       var gc = parseInt(localStorage.getItem('neuron_games_played') || '0', 10) + 1;
       localStorage.setItem('neuron_games_played', gc);
@@ -2696,7 +3057,7 @@ function runGame() {
       }
       if (gState === 'playing' && !isDead) {
         accum += dt;
-        while (accum >= gameSpd) { accum -= gameSpd; step(); }
+        while (accum >= gameSpd) { accum -= gameSpd; totalSteps++; step(); }
       }
     } catch(e) {
       var box = document.getElementById('errBox');

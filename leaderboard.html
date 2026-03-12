@@ -57,11 +57,14 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 
 .scoreRow { display:flex; align-items:center; padding:6px 0; border-bottom:1px solid rgba(79,195,247,0.05); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; }
 .scoreRank { width:28px; color:rgba(160,216,240,0.3); font-size:10px; }
-.scoreFlag { width:22px; font-size:14px; text-align:center; flex-shrink:0; }
+.scoreFlag { width:24px; text-align:center; flex-shrink:0; margin-right:6px; }
+.scoreFlag img { width:18px !important; height:12px !important; object-fit:cover; vertical-align:middle; border-radius:1px !important; }
 .scoreName { flex:1; color:#4fc3f7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .scoreVal { color:#ffe566; font-weight:700; min-width:30px; text-align:right; }
 .scoreRow.you .scoreName { color:#ff6b9d; }
 .scoreRow.you .scoreVal { color:#ff6b9d; }
+.scoreRow.clickable { cursor:pointer; }
+.scoreRow.clickable:hover { background:rgba(79,195,247,0.08); }
 
 /* Medal SVGs */
 .medal { display:inline-block; width:18px; height:18px; vertical-align:middle; margin-right:2px; }
@@ -126,6 +129,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
   var platFilter = ''; // '' = all
   var geoLayer = null;
   var countryCounts = {}; // iso -> count
+  var countryNames = {}; // iso -> name
 
   // ── Medal SVGs — neuron icons matching in-game leaderboard ──
   function neuronSVG(color) {
@@ -147,18 +151,14 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
     3: neuronSVG('#cd7f32')   // bronze
   };
 
-  // ── Country code to flag (HTML) ──
+  // ── Country code to flag (HTML) — uses flag images for Windows compat ──
   function flagHTML(iso, size) {
     if (!iso || iso.length !== 2) return '';
     size = size || 16;
     if (iso === 'NS') return '<img src="/synaptica-flag-vF.jpg" style="height:' + size + 'px;vertical-align:middle;border-radius:2px;">';
-    var emoji = String.fromCodePoint(
-      0x1F1E6 + iso.charCodeAt(0) - 65,
-      0x1F1E6 + iso.charCodeAt(1) - 65
-    );
-    return '<span style="font-size:' + size + 'px;vertical-align:middle;">' + emoji + '</span>';
+    return '<img src="https://flagcdn.com/w40/' + iso.toLowerCase() + '.png" style="height:' + size + 'px;vertical-align:middle;border-radius:2px;">';
   }
-  // Plain text flag for tooltip
+  // Plain text flag for tooltip — still use emoji (Leaflet tooltips render fine)
   function flag(iso) {
     if (!iso || iso.length !== 2) return '';
     if (iso === 'NS') return 'SYNAPTICA';
@@ -222,6 +222,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
         onEachFeature: function(feature, layer) {
           var name = feature.properties.name;
           var iso = feature.properties.iso;
+          countryNames[iso] = name;
           layer.bindTooltip(
             '<b>' + flag(iso) + ' ' + name + '</b>',
             { className: 'countryTooltip', sticky: true, direction: 'top', offset: [0, -10] }
@@ -364,8 +365,10 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
         var rank = i + 1;
         var medalHTML = medals[rank] || (rank + '.');
         var isYou = r.name && r.name.toUpperCase() === playerName;
-        var countryFlag = r.country_code ? flagHTML(r.country_code, 14) : '';
-        html += '<div class="scoreRow' + (isYou ? ' you' : '') + '">';
+        var cc = r.country_code || '';
+        var countryFlag = cc ? flagHTML(cc, 14) : '';
+        var clickable = cc && cc !== selectedISO ? ' clickable' : '';
+        html += '<div class="scoreRow' + (isYou ? ' you' : '') + clickable + '"' + (clickable ? ' data-cc="' + esc(cc) + '"' : '') + '>';
         html += '<span class="scoreRank">' + medalHTML + '</span>';
         html += '<span class="scoreFlag">' + countryFlag + '</span>';
         html += '<span class="scoreName">' + esc(r.name || 'ANON') + '</span>';
@@ -373,6 +376,13 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
         html += '</div>';
       }
       scoresEl.innerHTML = html;
+      // Click handler for score rows → navigate to that country
+      scoresEl.querySelectorAll('.scoreRow.clickable').forEach(function(row) {
+        row.addEventListener('click', function() {
+          var cc = row.getAttribute('data-cc');
+          if (cc) selectCountry(cc, countryNames[cc] || cc);
+        });
+      });
     }
 
     // Try with country_code, fall back to without

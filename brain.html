@@ -196,7 +196,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
   // ── Neural populations (unlock progressively by tier) ──
   // Each population has a target angle on the cluster for spatial grouping
   var POPULATIONS = [
-    { id: 'sensors',     name: 'SENSORS',       color: [100,220,100], angle: -Math.PI/2,     unlockMin: 302,
+    { id: 'sensors',     name: 'SENSORS',       color: [100,220,100], angle: -Math.PI/2,     unlockMin: 0,
       desc: 'The input scouts. Detect touch, chemicals, temperature, light, and other signals from the environment.' },
     { id: 'motors',      name: 'MOTORS',        color: [220,100,100], angle:  Math.PI/2,     unlockMin: 302,
       desc: 'The output drivers. Activate muscles and steer movement, turning neural activity into action.' },
@@ -432,7 +432,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
     if (next) {
       var needed = next.min - neuronCount;
       document.getElementById('progressWrap').style.display = 'flex';
-      document.getElementById('progLabel').innerHTML = '<span class="progNum">' + needed.toLocaleString() + '</span> neurons until ' + animalSVG(next.iconId, 14) + ' ' + next.name.toUpperCase();
+      document.getElementById('progLabel').innerHTML = '<span class="progNum">' + needed.toLocaleString() + '</span> neurons until ' + next.name.toUpperCase();
       var prevMin = currentTier.min;
       var pct = Math.min(100, ((neuronCount - prevMin) / (next.min - prevMin)) * 100);
       document.getElementById('progFill').style.width = pct + '%';

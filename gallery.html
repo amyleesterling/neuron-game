@@ -197,7 +197,7 @@ a:hover { color:#80d8ff; }
 
   function renderNeuron(canvas, data) {
     var ctx = canvas.getContext('2d');
-    var size = canvas.width || 180;
+    var size = data._lbSize || canvas.width || 180;
     if (!data._lbSize) { canvas.width = 180; canvas.height = 180; size = 180; }
 
     var cols = data.cols || 48;
@@ -473,5 +473,39 @@ a:hover { color:#80d8ff; }
   });
 })();
 </script>
+<script>
+// Audio — click SFX + mute for gallery page
+(function() {
+  var audioCtx = null;
+  var muted = localStorage.getItem('neuron_muted') === '1';
+  var muteBtn = document.getElementById('galleryMuteBtn');
+  if (muteBtn) muteBtn.textContent = muted ? '🔇' : '🔊';
+
+  function ensure() { if (!audioCtx) try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
+
+  function clickSfx() {
+    if (!audioCtx || muted) return;
+    var t = audioCtx.currentTime;
+    var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(800, t);
+    o.frequency.exponentialRampToValueAtTime(500, t + 0.04);
+    g.gain.setValueAtTime(0.08, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t); o.stop(t + 0.06);
+  }
+
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('button, a, .sortBtn, .platBtn, .card')) { ensure(); clickSfx(); }
+  });
+
+  window.toggleGalleryMute = function() {
+    muted = !muted;
+    localStorage.setItem('neuron_muted', muted ? '1' : '0');
+    if (muteBtn) muteBtn.textContent = muted ? '🔇' : '🔊';
+  };
+})();
+</script>
+<button id="galleryMuteBtn" onclick="toggleGalleryMute()" style="position:fixed;bottom:12px;right:12px;background:rgba(0,0,0,0.5);border:1px solid rgba(79,195,247,0.3);border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;z-index:9000;display:flex;align-items:center;justify-content:center;padding:0;transition:opacity 0.2s;opacity:0.5;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.5'">🔊</button>
 </body>
 </html>

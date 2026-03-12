@@ -447,5 +447,39 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
   });
 })();
 </script>
+<script>
+// Audio — click SFX + mute for leaderboard page
+(function() {
+  var audioCtx = null;
+  var muted = localStorage.getItem('neuron_muted') === '1';
+  var muteBtn = document.getElementById('lbMuteBtn');
+  if (muteBtn) muteBtn.textContent = muted ? '🔇' : '🔊';
+
+  function ensure() { if (!audioCtx) try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
+
+  function clickSfx() {
+    if (!audioCtx || muted) return;
+    var t = audioCtx.currentTime;
+    var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(800, t);
+    o.frequency.exponentialRampToValueAtTime(500, t + 0.04);
+    g.gain.setValueAtTime(0.08, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t); o.stop(t + 0.06);
+  }
+
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('button, a, .lbTab, .platBtn, .sortBtn')) { ensure(); clickSfx(); }
+  });
+
+  window.toggleLbMute = function() {
+    muted = !muted;
+    localStorage.setItem('neuron_muted', muted ? '1' : '0');
+    if (muteBtn) muteBtn.textContent = muted ? '🔇' : '🔊';
+  };
+})();
+</script>
+<button id="lbMuteBtn" onclick="toggleLbMute()" style="position:fixed;bottom:12px;right:12px;background:rgba(0,0,0,0.5);border:1px solid rgba(79,195,247,0.3);border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;z-index:9000;display:flex;align-items:center;justify-content:center;padding:0;transition:opacity 0.2s;opacity:0.5;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.5'">🔊</button>
 </body>
 </html>

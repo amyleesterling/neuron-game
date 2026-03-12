@@ -139,6 +139,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
   </div>
 </div>
 
+<button id="muteBtn" onclick="toggleMute()" style="position:fixed;bottom:12px;right:12px;background:rgba(0,0,0,0.5);border:1px solid rgba(79,195,247,0.3);border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;z-index:9000;display:flex;align-items:center;justify-content:center;padding:0;transition:opacity 0.2s;opacity:0.5;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.5'">🔊</button>
 <canvas id="gameCanvas"></canvas>
 <div id="errBox"></div>
 
@@ -688,6 +689,280 @@ function runGame() {
   var stripeHasPurchasedBefore = !!localStorage.getItem('neuron_stripe_bought');
   var stripeTier = stripeHasPurchasedBefore ? 2 : 1;
 
+  // ── Audio Engine (Web Audio API — no files needed) ──
+  var audioCtx = null;
+  var audioMuted = localStorage.getItem('neuron_muted') === '1';
+  var bgmGain = null;
+  var bgmStarted = false;
+
+  function ensureAudio() {
+    if (audioCtx) return;
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      bgmGain = audioCtx.createGain();
+      bgmGain.gain.value = audioMuted ? 0 : 0.12;
+      bgmGain.connect(audioCtx.destination);
+    } catch(e) {}
+  }
+
+  function sfx(type) {
+    if (!audioCtx || audioMuted) return;
+    var t = audioCtx.currentTime;
+    var o, g;
+    switch(type) {
+      case 'score': // water droplet pop — clean and satisfying
+        // Droplet — quick descending pitch with round tone
+        o = audioCtx.createOscillator(); g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.setValueAtTime(1600, t);
+        o.frequency.exponentialRampToValueAtTime(600, t + 0.12);
+        g.gain.setValueAtTime(0.16, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t); o.stop(t + 0.18);
+        // Soft ring-out for warmth
+        var o2 = audioCtx.createOscillator(); var g2 = audioCtx.createGain();
+        o2.type = 'sine'; o2.frequency.value = 880;
+        g2.gain.setValueAtTime(0.06, t + 0.05);
+        g2.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        o2.connect(g2); g2.connect(audioCtx.destination);
+        o2.start(t + 0.05); o2.stop(t + 0.35);
+        break;
+      case 'branch': // soft click/transition
+        o = audioCtx.createOscillator(); g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.setValueAtTime(520, t);
+        o.frequency.exponentialRampToValueAtTime(340, t + 0.1);
+        g.gain.setValueAtTime(0.1, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t); o.stop(t + 0.12);
+        break;
+      case 'bonus': // ascending arpeggio chime
+        [660, 880, 1100, 1320].forEach(function(freq, i) {
+          var oi = audioCtx.createOscillator(); var gi = audioCtx.createGain();
+          oi.type = 'sine'; oi.frequency.value = freq;
+          gi.gain.setValueAtTime(0.15, t + i * 0.08);
+          gi.gain.exponentialRampToValueAtTime(0.001, t + i * 0.08 + 0.25);
+          oi.connect(gi); gi.connect(audioCtx.destination);
+          oi.start(t + i * 0.08); oi.stop(t + i * 0.08 + 0.25);
+        });
+        break;
+      case 'hurt': // brief low thud
+        o = audioCtx.createOscillator(); g = audioCtx.createGain();
+        o.type = 'triangle'; o.frequency.setValueAtTime(200, t);
+        o.frequency.exponentialRampToValueAtTime(80, t + 0.15);
+        g.gain.setValueAtTime(0.2, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t); o.stop(t + 0.2);
+        break;
+      case 'death': // descending tone + noise
+        o = audioCtx.createOscillator(); g = audioCtx.createGain();
+        o.type = 'sawtooth'; o.frequency.setValueAtTime(400, t);
+        o.frequency.exponentialRampToValueAtTime(60, t + 0.6);
+        g.gain.setValueAtTime(0.12, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t); o.stop(t + 0.7);
+        break;
+      case 'start': // ascending whoosh
+        o = audioCtx.createOscillator(); g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.setValueAtTime(220, t);
+        o.frequency.exponentialRampToValueAtTime(880, t + 0.3);
+        g.gain.setValueAtTime(0.12, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t); o.stop(t + 0.35);
+        break;
+      case 'click': // soft UI button click
+        o = audioCtx.createOscillator(); g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.setValueAtTime(800, t);
+        o.frequency.exponentialRampToValueAtTime(500, t + 0.04);
+        g.gain.setValueAtTime(0.08, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t); o.stop(t + 0.06);
+        break;
+      case 'signal': // subtle blip as signal travels
+        o = audioCtx.createOscillator(); g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.value = 1200;
+        g.gain.setValueAtTime(0.04, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t); o.stop(t + 0.06);
+        break;
+      case 'leaderboard': // dramatic reveal — rising sweep + shimmer
+        o = audioCtx.createOscillator(); g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.setValueAtTime(200, t);
+        o.frequency.exponentialRampToValueAtTime(800, t + 0.4);
+        g.gain.setValueAtTime(0.1, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t); o.stop(t + 0.5);
+        // Shimmer top
+        var lr = audioCtx.createOscillator(); var lg = audioCtx.createGain();
+        lr.type = 'sine'; lr.frequency.value = 1320;
+        lg.gain.setValueAtTime(0.06, t + 0.3);
+        lg.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+        lr.connect(lg); lg.connect(audioCtx.destination);
+        lr.start(t + 0.3); lr.stop(t + 0.8);
+        break;
+      case 'gallery': // magical achievement — sparkle cascade
+        [880, 1108.73, 1318.51, 1760].forEach(function(freq, i) {
+          var oi = audioCtx.createOscillator(); var gi = audioCtx.createGain();
+          oi.type = 'sine'; oi.frequency.value = freq;
+          gi.gain.setValueAtTime(0.1, t + i * 0.1);
+          gi.gain.setTargetAtTime(0.001, t + i * 0.1 + 0.2, 0.15);
+          oi.connect(gi); gi.connect(audioCtx.destination);
+          oi.start(t + i * 0.1); oi.stop(t + i * 0.1 + 0.6);
+        });
+        // Final bright ring
+        var gr = audioCtx.createOscillator(); var gg = audioCtx.createGain();
+        gr.type = 'sine'; gr.frequency.value = 2093; // C7
+        gg.gain.setValueAtTime(0.05, t + 0.4);
+        gg.gain.setTargetAtTime(0.001, t + 0.6, 0.3);
+        gr.connect(gg); gg.connect(audioCtx.destination);
+        gr.start(t + 0.4); gr.stop(t + 1.2);
+        break;
+      case 'highscore': // triumphant fanfare — major chord arpeggio
+        [523.25, 659.25, 783.99, 1046.50].forEach(function(freq, i) {
+          var oi = audioCtx.createOscillator(); var gi = audioCtx.createGain();
+          oi.type = 'sine'; oi.frequency.value = freq;
+          gi.gain.setValueAtTime(0.12, t + i * 0.12);
+          gi.gain.setTargetAtTime(0.001, t + i * 0.12 + 0.3, 0.2);
+          oi.connect(gi); gi.connect(audioCtx.destination);
+          oi.start(t + i * 0.12); oi.stop(t + i * 0.12 + 0.8);
+          // Octave double for fullness
+          var oh = audioCtx.createOscillator(); var gh = audioCtx.createGain();
+          oh.type = 'sine'; oh.frequency.value = freq * 2;
+          gh.gain.setValueAtTime(0.04, t + i * 0.12 + 0.02);
+          gh.gain.setTargetAtTime(0.001, t + i * 0.12 + 0.25, 0.15);
+          oh.connect(gh); gh.connect(audioCtx.destination);
+          oh.start(t + i * 0.12 + 0.02); oh.stop(t + i * 0.12 + 0.7);
+        });
+        break;
+    }
+  }
+
+  // Background music — generative ambient soundscape
+  // Mysterious yet happy, soothing Pandora-like evolving atmosphere
+  function startBGM() {
+    if (!audioCtx || bgmStarted) return;
+    bgmStarted = true;
+
+    // Warm pad: layered fifths with slow detuning
+    var padNotes = [65.41, 98.00, 130.81, 196.00]; // C2, G2, C3, G3
+    var padOscs = [];
+    for (var i = 0; i < padNotes.length; i++) {
+      var oi = audioCtx.createOscillator();
+      var gi = audioCtx.createGain();
+      oi.type = 'sine';
+      oi.frequency.value = padNotes[i];
+      gi.gain.value = 0.018;
+      oi.connect(gi);
+      gi.connect(bgmGain);
+      oi.start();
+      padOscs.push({o: oi, g: gi, base: padNotes[i]});
+    }
+
+    // Gentle shimmer layer — high harmonics that breathe
+    var shimmer = audioCtx.createOscillator();
+    var shimGain = audioCtx.createGain();
+    shimmer.type = 'sine';
+    shimmer.frequency.value = 523.25; // C5
+    shimGain.gain.value = 0;
+    shimmer.connect(shimGain);
+    shimGain.connect(bgmGain);
+    shimmer.start();
+
+    // Shimmer breathes in and out
+    function breathe() {
+      if (!audioCtx || audioCtx.state === 'closed') return;
+      var t = audioCtx.currentTime;
+      // Pick a happy pentatonic note (C maj pentatonic: C, D, E, G, A)
+      var shimNotes = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66];
+      shimmer.frequency.setTargetAtTime(shimNotes[Math.floor(Math.random() * shimNotes.length)], t, 0.5);
+      shimGain.gain.setTargetAtTime(0.008 + Math.random() * 0.006, t, 1.5);
+      shimGain.gain.setTargetAtTime(0.001, t + 3, 2);
+      setTimeout(breathe, 4000 + Math.random() * 4000);
+    }
+    breathe();
+
+    // Pentatonic chime drops — random gentle bell tones
+    var chimeNotes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
+    function chime() {
+      if (!audioCtx || audioCtx.state === 'closed') return;
+      var t = audioCtx.currentTime;
+      var freq = chimeNotes[Math.floor(Math.random() * chimeNotes.length)];
+      // Main tone
+      var co = audioCtx.createOscillator();
+      var cg = audioCtx.createGain();
+      co.type = 'sine';
+      co.frequency.value = freq;
+      cg.gain.setValueAtTime(0.03 + Math.random() * 0.02, t);
+      cg.gain.exponentialRampToValueAtTime(0.001, t + 2.5);
+      co.connect(cg); cg.connect(bgmGain);
+      co.start(t); co.stop(t + 2.5);
+      // Soft octave harmonic
+      var co2 = audioCtx.createOscillator();
+      var cg2 = audioCtx.createGain();
+      co2.type = 'sine';
+      co2.frequency.value = freq * 2;
+      cg2.gain.setValueAtTime(0.012, t + 0.05);
+      cg2.gain.exponentialRampToValueAtTime(0.001, t + 1.8);
+      co2.connect(cg2); cg2.connect(bgmGain);
+      co2.start(t + 0.05); co2.stop(t + 1.8);
+      setTimeout(chime, 2000 + Math.random() * 5000);
+    }
+    setTimeout(chime, 1500);
+
+    // Slow evolving pad drift
+    function drift() {
+      if (!audioCtx || audioCtx.state === 'closed') return;
+      var t = audioCtx.currentTime;
+      for (var j = 0; j < padOscs.length; j++) {
+        var detune = (Math.random() - 0.5) * 6;
+        padOscs[j].o.frequency.setTargetAtTime(padOscs[j].base + detune, t, 3);
+        // Gently vary individual pad volumes for movement
+        padOscs[j].g.gain.setTargetAtTime(0.012 + Math.random() * 0.012, t, 2);
+      }
+      setTimeout(drift, 4000 + Math.random() * 3000);
+    }
+    drift();
+
+    // Sub-bass warmth — very low, felt more than heard
+    var sub = audioCtx.createOscillator();
+    var subGain = audioCtx.createGain();
+    sub.type = 'sine';
+    sub.frequency.value = 55; // A1
+    subGain.gain.value = 0.025;
+    sub.connect(subGain);
+    subGain.connect(bgmGain);
+    sub.start();
+
+    // Gentle LFO on the whole mix for breathing feel
+    var lfo = audioCtx.createOscillator();
+    var lfoGain = audioCtx.createGain();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.08; // very slow breathing
+    lfoGain.gain.value = 0.02;
+    lfo.connect(lfoGain);
+    lfoGain.connect(bgmGain.gain);
+    lfo.start();
+  }
+
+  function stopBGM() {
+    if (bgmGain) bgmGain.gain.value = 0;
+    bgmStarted = false;
+  }
+
+  function toggleMute() {
+    audioMuted = !audioMuted;
+    localStorage.setItem('neuron_muted', audioMuted ? '1' : '0');
+    if (bgmGain) bgmGain.gain.value = audioMuted ? 0 : 0.12;
+    var muteBtn = document.getElementById('muteBtn');
+    if (muteBtn) muteBtn.textContent = audioMuted ? '🔇' : '🔊';
+  }
+
   function cellKey(x, y) { return x + '_' + y; }
   function worldX(gx) { return gx * CELL + CELL / 2; }
   function worldY(gy) { return gy * CELL + CELL / 2; }
@@ -969,6 +1244,7 @@ function runGame() {
         b.growing = false;
         score++;
         gameSpd = Math.max(30, gameSpd - 2);
+        sfx('score');
         launchSignal(b);
         spawnDot();
         if (Math.random() < 0.25) spawnDot();
@@ -978,6 +1254,7 @@ function runGame() {
         if (earnedBonus) {
           nextBonusAt += BONUS_LIFE_THRESHOLD;
           lives++;
+          sfx('bonus');
           signals[signals.length - 1].onDone = isDemo ? nextBranch : function() {
             showBonusLifeAnim(function() { nextBranch(); });
           };
@@ -1055,6 +1332,7 @@ function runGame() {
 
   function nextBranch() {
     try {
+      sfx('branch');
       spawnBranch();
       activeIdx = branches.length - 1;
       branches[activeIdx].growing = true;
@@ -1102,6 +1380,7 @@ function runGame() {
 
     lives--;
     if (lives > 0) {
+      sfx('hurt');
       // Kill current branch, spawn fresh one from soma after brief pause
       b.growing = false;
       isHurt = true;
@@ -1134,6 +1413,8 @@ function runGame() {
   }
 
   function doFullDeath() {
+    sfx('death');
+    if (bgmGain && !audioMuted) bgmGain.gain.setTargetAtTime(0.03, audioCtx.currentTime, 0.5);
     isDead = true;
     gState = 'dead';
     frozenBranches = branches.slice();
@@ -1676,6 +1957,8 @@ function runGame() {
       isNewHighScore = score > 0 && score > prevBest;
       if (isNewHighScore) localStorage.setItem('neuron_best_score', String(score));
     }
+    sfx('leaderboard');
+    if (isNewHighScore) setTimeout(function() { sfx('highscore'); }, 500);
     olTitle.textContent = 'APOPTOSIS';
     olTitle.style.color = '#ff4466';
     olTitle.style.textShadow = '0 0 30px rgba(255,68,102,0.8)';
@@ -1808,6 +2091,7 @@ function runGame() {
       // Save neuron to gallery ONCE per game (synchronous flag before any async)
       if (score >= 5 && frozenBranches.length > 0 && !gallerySaved) {
         gallerySaved = true;
+        sfx('gallery');
         var galleryData = {
           name: n,
           score: score,
@@ -2145,6 +2429,10 @@ function runGame() {
       document.getElementById('countryLbLink').style.display = 'none';
       isDemo = false;
       gState = 'playing';
+      ensureAudio();
+      sfx('start');
+      if (bgmStarted && bgmGain && !audioMuted) bgmGain.gain.setTargetAtTime(0.12, audioCtx.currentTime, 0.3);
+      else startBGM();
       var gc = parseInt(localStorage.getItem('neuron_games_played') || '0', 10) + 1;
       localStorage.setItem('neuron_games_played', gc);
       initGame();
@@ -2412,6 +2700,17 @@ function runGame() {
     }
     requestAnimationFrame(loop);
   }
+
+  // Set initial mute button state
+  if (audioMuted) { var mb = document.getElementById('muteBtn'); if (mb) mb.textContent = '🔇'; }
+
+  // Button click SFX — delegated to all buttons/links
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('button, .lbTab, .shareBtn, .submitBtn, a')) {
+      ensureAudio();
+      sfx('click');
+    }
+  });
 
   // Check if returning from Stripe payment
   if (!checkStripeReturn()) {

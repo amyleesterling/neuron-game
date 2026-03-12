@@ -465,7 +465,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
       totalSynapses += d.score || 0;
       var angle = (i / data.length) * Math.PI * 2;
       var cx = W / 2, cy = (H + 130) / 2;
-      var spread = Math.min(W, H) * 0.25;
+      var spread = Math.min(W, H) * 0.35;
       // Cluster nodes are bigger — radius proportional to sqrt of member count
       var r = d._isCluster
         ? Math.max(8, Math.sqrt(d._clusterCount) * 2.5)
@@ -610,7 +610,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
   // ── Force-directed layout ──
   function runForceLayout() {
     var n = nodes.length;
-    var k = Math.sqrt((W * H) / n) * 0.4; // ideal edge length
+    var k = Math.sqrt((W * H) / n) * 0.7; // ideal edge length — larger for more spread
     var iterations = 200;
     var temp = Math.min(W, H) * 0.15;
     var cooling = temp / iterations;
@@ -653,8 +653,8 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
       for (var i = 0; i < n; i++) {
         var dx = cx - nodes[i].x, dy = cy - nodes[i].y;
         var gDist = Math.sqrt(dx * dx + dy * dy) || 1;
-        nodes[i].vx += dx * 0.05;
-        nodes[i].vy += dy * 0.05;
+        nodes[i].vx += dx * 0.02;
+        nodes[i].vy += dy * 0.02;
       }
 
       // Apply with temperature clamping

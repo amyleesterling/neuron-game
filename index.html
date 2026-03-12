@@ -168,13 +168,61 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
   <button id="mainBtn">FIRE SIGNAL</button>
   <a id="galleryLink" href="/gallery.html" style="display:none;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:1px solid rgba(79,195,247,0.35);padding:8px 20px;"><img src="/synaptica-flag-vF.jpg" style="height:14px;vertical-align:middle;margin-right:4px;border-radius:2px;"> NEURON GALLERY</a>
   <a id="countryLbLink" href="/leaderboard.html" style="display:none;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:1px solid rgba(79,195,247,0.35);padding:8px 20px;">&#x1F30D; COUNTRY LEADERBOARDS</a>
-  <a id="lobbyLbLink" href="/leaderboard.html" style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:1px solid rgba(79,195,247,0.35);padding:8px 20px;">&#x1F30D; GLOBAL LEADERBOARD</a>
+  <a id="lobbyLbLink" href="/leaderboard.html" style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:1px solid rgba(79,195,247,0.35);padding:8px 20px;">&#x1F30D; LEADERBOARD</a>
 </div>
 <div id="lobbyStats"></div>
 <a id="snakeBadge" href="https://pump.fun/coin/8e5kbfG3uFDwLEL6WCeJ9P53DDjh2W4Ls4H1EEMBpump" target="_blank" rel="noopener">powered by <span class="snakeTicker">$SNAKE</span></a>
 <canvas id="snakeCanvas"></canvas>
+<div id="feedbackWidget" style="position:fixed;bottom:10px;right:10px;z-index:22;">
+  <button id="feedbackToggle" title="Send feedback" style="width:32px;height:32px;border:1px solid rgba(160,216,240,0.15);background:rgba(0,0,0,0.5);color:rgba(160,216,240,0.35);font-size:16px;cursor:pointer;border-radius:50%;font-family:'Courier New',monospace;transition:border-color 0.3s,color 0.3s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.borderColor='rgba(79,195,247,0.6)';this.style.color='#4fc3f7'" onmouseout="this.style.borderColor='rgba(160,216,240,0.15)';this.style.color='rgba(160,216,240,0.35)'">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  </button>
+  <div id="feedbackForm" style="display:none;position:absolute;bottom:40px;right:0;width:260px;background:rgba(0,0,0,0.92);border:1px solid rgba(79,195,247,0.2);padding:12px;font-family:'Courier New',monospace;">
+    <div style="font-size:8px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(160,216,240,0.4);margin-bottom:8px;">QUESTIONS / COMMENTS / BUGS</div>
+    <textarea id="feedbackText" placeholder="Type here..." style="width:100%;height:70px;background:transparent;border:1px solid rgba(79,195,247,0.2);color:#a0d8f0;font-family:'Courier New',monospace;font-size:11px;padding:8px;resize:none;outline:none;border-radius:0;"></textarea>
+    <button id="feedbackSend" style="width:100%;margin-top:6px;background:transparent;border:1px solid rgba(79,195,247,0.3);color:#4fc3f7;font-family:'Courier New',monospace;font-size:9px;letter-spacing:0.15em;padding:7px;cursor:pointer;text-transform:uppercase;">SEND</button>
+    <div id="feedbackStatus" style="font-size:8px;text-align:center;margin-top:4px;opacity:0.5;letter-spacing:0.1em;text-transform:uppercase;"></div>
+  </div>
+</div>
 
 <script>
+// ── Feedback widget ──
+(function() {
+  var toggle = document.getElementById('feedbackToggle');
+  var form = document.getElementById('feedbackForm');
+  var text = document.getElementById('feedbackText');
+  var send = document.getElementById('feedbackSend');
+  var status = document.getElementById('feedbackStatus');
+  if (!toggle) return;
+  toggle.addEventListener('click', function() {
+    var open = form.style.display !== 'none';
+    form.style.display = open ? 'none' : 'block';
+    if (!open) text.focus();
+  });
+  send.addEventListener('click', function() {
+    var msg = text.value.trim();
+    if (!msg) return;
+    send.disabled = true;
+    send.textContent = 'SENDING...';
+    var sb = window._feedbackSB || (window._feedbackSB = window.supabase.createClient(
+      'https://amyxocqdfcaeieerqllv.supabase.co',
+      'sb_publishable_uvng-9IdwolvuiCG9pQTIQ_1gyaKOVH'
+    ));
+    var name = localStorage.getItem('neuron_name') || '';
+    var page = location.pathname;
+    sb.from('neuron_feedback').insert({message: msg, name: name, page: page, platform: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop'})
+      .then(function(res) {
+        if (res.error) { status.textContent = 'ERROR - TRY AGAIN'; status.style.color = '#ff4466'; }
+        else { status.textContent = 'SENT! THANK YOU'; status.style.color = '#4fc3f7'; text.value = ''; }
+        send.disabled = false; send.textContent = 'SEND';
+        setTimeout(function() { status.textContent = ''; form.style.display = 'none'; }, 2000);
+      });
+  });
+  text.addEventListener('keydown', function(e) { e.stopPropagation(); });
+  document.addEventListener('click', function(e) {
+    if (!document.getElementById('feedbackWidget').contains(e.target)) form.style.display = 'none';
+  });
+})();
 // ── $SNAKE hover animation ──
 (function() {
   var sc = document.getElementById('snakeCanvas');
@@ -1097,6 +1145,7 @@ function runGame() {
     olTitle.style.color = '#4fc3f7';
     olTitle.style.textShadow = '0 0 30px rgba(79,195,247,0.9)';
     document.getElementById('snakeBadge').style.display = 'none';
+    document.getElementById('feedbackWidget').style.display = 'none';
 
     var btns = '';
     if (!stripeLivesUsed) {
@@ -1627,6 +1676,7 @@ function runGame() {
     olTitle.style.color = '#ff4466';
     olTitle.style.textShadow = '0 0 30px rgba(255,68,102,0.8)';
     document.getElementById('snakeBadge').style.display = 'none';
+    document.getElementById('feedbackWidget').style.display = 'none';
     document.getElementById('lobbyLbLink').style.display = 'none';
 
     var nameVal = playerName ? ' value="' + esc(playerName) + '"' : '';
@@ -2063,6 +2113,7 @@ function runGame() {
       overlay.style.display = 'none';
       document.getElementById('lobbyStats').style.display = 'none';
       document.getElementById('snakeBadge').style.display = 'none';
+    document.getElementById('feedbackWidget').style.display = 'none';
       olTitle.textContent = 'NEURON';
       olTitle.style.color = '';
       olTitle.style.textShadow = '';

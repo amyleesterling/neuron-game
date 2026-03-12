@@ -127,8 +127,38 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
   });
 })();
 </script>
+<style>
+#announceBanner { position:fixed; top:0; left:0; right:0; z-index:100; background:linear-gradient(135deg, rgba(20,60,90,0.95), rgba(10,30,50,0.95)); border-bottom:1px solid rgba(79,195,247,0.3); padding:10px 16px; display:flex; align-items:center; justify-content:center; gap:12px; transform:translateY(-100%); animation:bannerSlide 0.5s 0.3s ease-out forwards; cursor:pointer; }
+#announceBanner:hover { background:linear-gradient(135deg, rgba(30,80,120,0.95), rgba(15,45,70,0.95)); }
+#announceBanner .bannerText { font-family:'Courier New',monospace; font-size:11px; letter-spacing:0.12em; color:#4fc3f7; text-transform:uppercase; }
+#announceBanner .bannerEmoji { font-size:16px; }
+#announceBanner .bannerClose { background:none; border:none; color:rgba(160,216,240,0.4); font-size:16px; cursor:pointer; padding:0 4px; font-family:'Courier New',monospace; margin-left:8px; }
+#announceBanner .bannerClose:hover { color:#4fc3f7; }
+@keyframes bannerSlide { to { transform:translateY(0); } }
+</style>
 </head>
 <body>
+
+<div id="announceBanner" style="display:none;" onclick="window.open('leaderboard.html','_blank')">
+  <span class="bannerEmoji">🪐</span>
+  <span class="bannerText">Thanks for playing! Check out the updates to Global Leaderboard</span>
+  <button class="bannerClose" onclick="event.stopPropagation(); dismissBanner();">&times;</button>
+</div>
+<script>
+(function() {
+  var KEY = 'announce_leaderboard_v1';
+  var now = Date.now();
+  var stored = localStorage.getItem(KEY);
+  if (stored === 'dismissed') return;
+  if (stored && now - Number(stored) > 72 * 60 * 60 * 1000) { localStorage.setItem(KEY, 'dismissed'); return; }
+  if (!stored) localStorage.setItem(KEY, String(now));
+  document.getElementById('announceBanner').style.display = 'flex';
+})();
+function dismissBanner() {
+  localStorage.setItem('announce_leaderboard_v1', 'dismissed');
+  document.getElementById('announceBanner').style.display = 'none';
+}
+</script>
 
 <div id="hud">
   <div id="hudTitle">NEURON</div>

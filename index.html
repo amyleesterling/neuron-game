@@ -790,21 +790,25 @@ function runGame() {
         o.connect(g); g.connect(audioCtx.destination);
         o.start(t); o.stop(t + 0.06);
         break;
-      case 'leaderboard': // reveal — clean octave sweep C4→C5 + E5 shimmer
-        o = audioCtx.createOscillator(); g = audioCtx.createGain();
-        o.type = 'sine'; o.frequency.setValueAtTime(261.63, t); // C4
-        o.frequency.exponentialRampToValueAtTime(523.25, t + 0.35); // C5
-        g.gain.setValueAtTime(0.1, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
-        o.connect(g); g.connect(audioCtx.destination);
-        o.start(t); o.stop(t + 0.45);
-        // Shimmer — E5 harmonizes with C5
-        var lr = audioCtx.createOscillator(); var lg = audioCtx.createGain();
-        lr.type = 'sine'; lr.frequency.value = 659.25; // E5
-        lg.gain.setValueAtTime(0.05, t + 0.25);
-        lg.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
-        lr.connect(lg); lg.connect(audioCtx.destination);
-        lr.start(t + 0.25); lr.stop(t + 0.7);
+      case 'leaderboard': // ascending chime sequence landing on satisfying resolve
+        // C5 → E5 → G5 → C6 (major arpeggio climbing up, lands on octave)
+        [523.25, 659.25, 783.99, 1046.50].forEach(function(freq, i) {
+          var oi = audioCtx.createOscillator(); var gi = audioCtx.createGain();
+          oi.type = 'sine'; oi.frequency.value = freq;
+          gi.gain.setValueAtTime(0.1 + i * 0.02, t + i * 0.1);
+          gi.gain.exponentialRampToValueAtTime(0.001, t + i * 0.1 + (i === 3 ? 0.6 : 0.25));
+          oi.connect(gi); gi.connect(audioCtx.destination);
+          oi.start(t + i * 0.1); oi.stop(t + i * 0.1 + (i === 3 ? 0.6 : 0.25));
+          // Octave double on the final note for a full landing
+          if (i === 3) {
+            var oh = audioCtx.createOscillator(); var gh = audioCtx.createGain();
+            oh.type = 'sine'; oh.frequency.value = freq / 2; // C5 underneath
+            gh.gain.setValueAtTime(0.06, t + i * 0.1);
+            gh.gain.exponentialRampToValueAtTime(0.001, t + i * 0.1 + 0.5);
+            oh.connect(gh); gh.connect(audioCtx.destination);
+            oh.start(t + i * 0.1); oh.stop(t + i * 0.1 + 0.5);
+          }
+        });
         break;
       case 'gallery': // magical achievement — sparkle cascade
         [880, 1108.73, 1318.51, 1760].forEach(function(freq, i) {

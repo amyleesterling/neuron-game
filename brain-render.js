@@ -310,7 +310,7 @@ HM.startAutoFire = function() {
   function doFire() {
     if (nodes.length === 0) return;
 
-    var burstCount = HM.isMobile ? (1 + Math.floor(Math.random() * 2)) : (2 + Math.floor(Math.random() * 4));
+    var burstCount = HM.isMobile ? (2 + Math.floor(Math.random() * 3)) : (2 + Math.floor(Math.random() * 4));
     for (var b = 0; b < burstCount; b++) {
       var delay = b * (200 + Math.random() * 400);
       (function(d) {
@@ -334,7 +334,7 @@ HM.startAutoFire = function() {
       })(delay);
     }
 
-    var baseInterval = HM.currentTier.fireInterval * (HM.isMobile ? 0.5 : 0.35);
+    var baseInterval = HM.currentTier.fireInterval * (HM.isMobile ? 0.35 : 0.35);
     var jitter = (Math.random() - 0.5) * baseInterval * 0.4;
     HM.autoFireTimer = setTimeout(doFire, baseInterval + jitter);
   }
@@ -350,8 +350,8 @@ HM.animLoop = function() {
   var fxCtx = HM.fxCtx;
   var W = HM.W, H = HM.H;
   var mobile = HM.isMobile;
-  var maxFires = mobile ? 20 : 50;
-  var maxSignals = mobile ? 15 : 200;
+  var maxFires = mobile ? 40 : 50;
+  var maxSignals = mobile ? 40 : 200;
   fxCtx.clearRect(0, 0, W, H);
 
   if (edges.length > 0 && HM.maxEdgeWeight === 1) {
@@ -368,7 +368,7 @@ HM.animLoop = function() {
     if (!fire.propagated && fire.intensity < HM.currentTier.threshold) {
       fire.propagated = true;
       var nodeEdges = nodes[fire.nodeIdx].edgeIndices;
-      var maxProp = mobile ? Math.min(3, nodeEdges.length) : nodeEdges.length;
+      var maxProp = mobile ? Math.min(5, nodeEdges.length) : nodeEdges.length;
       for (var e = 0; e < maxProp; e++) {
         var ei = nodeEdges[e];
         var edge = edges[ei];

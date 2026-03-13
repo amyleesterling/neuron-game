@@ -8,26 +8,41 @@ HM.prerenderNeuron = function(data, size) {
   oc.width = size; oc.height = size;
   var ctx = oc.getContext('2d');
 
-  // Cluster nodes: render as a glowing multi-soma cluster
+  // Cluster nodes: render as a multi-soma cluster
   if (data._isCluster) {
     var cx = size / 2, cy = size / 2, r = size * 0.4;
-    var glow = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r);
-    glow.addColorStop(0, 'rgba(100,200,255,0.25)');
-    glow.addColorStop(0.6, 'rgba(40,120,200,0.1)');
-    glow.addColorStop(1, 'rgba(4,20,70,0)');
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = glow; ctx.fill();
-    var count = Math.min(data._clusterCount, 12);
-    for (var si = 0; si < count; si++) {
-      var a = (si / count) * Math.PI * 2 + Math.random() * 0.5;
-      var dist = r * (0.15 + Math.random() * 0.45);
-      var sx = cx + Math.cos(a) * dist;
-      var sy = cy + Math.sin(a) * dist;
-      var sr = size * (0.06 + Math.random() * 0.04);
-      var sg = ctx.createRadialGradient(sx, sy - sr * 0.1, 0, sx, sy, sr);
-      sg.addColorStop(0, 'rgba(140,220,255,0.7)');
-      sg.addColorStop(0.5, 'rgba(40,130,220,0.45)');
-      sg.addColorStop(1, 'rgba(4,20,70,0.15)');
-      ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fillStyle = sg; ctx.fill();
+    if (HM.isMobile) {
+      // No background glow on mobile, just solid dots
+      var count = Math.min(data._clusterCount, 8);
+      for (var si = 0; si < count; si++) {
+        var a = (si / count) * Math.PI * 2 + Math.random() * 0.5;
+        var dist = r * (0.15 + Math.random() * 0.45);
+        var sx = cx + Math.cos(a) * dist;
+        var sy = cy + Math.sin(a) * dist;
+        var sr = size * (0.06 + Math.random() * 0.04);
+        ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(80,170,230,0.8)';
+        ctx.fill();
+      }
+    } else {
+      var glow = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r);
+      glow.addColorStop(0, 'rgba(100,200,255,0.25)');
+      glow.addColorStop(0.6, 'rgba(40,120,200,0.1)');
+      glow.addColorStop(1, 'rgba(4,20,70,0)');
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = glow; ctx.fill();
+      var count = Math.min(data._clusterCount, 12);
+      for (var si = 0; si < count; si++) {
+        var a = (si / count) * Math.PI * 2 + Math.random() * 0.5;
+        var dist = r * (0.15 + Math.random() * 0.45);
+        var sx = cx + Math.cos(a) * dist;
+        var sy = cy + Math.sin(a) * dist;
+        var sr = size * (0.06 + Math.random() * 0.04);
+        var sg = ctx.createRadialGradient(sx, sy - sr * 0.1, 0, sx, sy, sr);
+        sg.addColorStop(0, 'rgba(140,220,255,0.7)');
+        sg.addColorStop(0.5, 'rgba(40,130,220,0.45)');
+        sg.addColorStop(1, 'rgba(4,20,70,0.15)');
+        ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fillStyle = sg; ctx.fill();
+      }
     }
     return oc;
   }
@@ -35,11 +50,17 @@ HM.prerenderNeuron = function(data, size) {
   // Single leaderboard entry without shape
   if (!data._hasShape) {
     var cx = size / 2, cy = size / 2, r = size * 0.35;
-    var fg = ctx.createRadialGradient(cx, cy - r * 0.1, 0, cx, cy, r);
-    fg.addColorStop(0, 'rgba(140,220,255,1)');
-    fg.addColorStop(0.4, 'rgba(40,130,220,1)');
-    fg.addColorStop(1, 'rgba(4,20,70,1)');
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = fg; ctx.fill();
+    if (HM.isMobile) {
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(60,150,220,1)';
+      ctx.fill();
+    } else {
+      var fg = ctx.createRadialGradient(cx, cy - r * 0.1, 0, cx, cy, r);
+      fg.addColorStop(0, 'rgba(140,220,255,1)');
+      fg.addColorStop(0.4, 'rgba(40,130,220,1)');
+      fg.addColorStop(1, 'rgba(4,20,70,1)');
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = fg; ctx.fill();
+    }
     return oc;
   }
 
@@ -97,11 +118,15 @@ HM.prerenderNeuron = function(data, size) {
   ctx.bezierCurveTo(r * 0.4, r * 0.72, -r * 0.4, r * 0.72, -r * 0.7, r * 0.6);
   ctx.bezierCurveTo(-r * 0.7, r * 0.2, -r * 0.25, -r * 0.35, 0, -r * 0.8);
   ctx.closePath();
-  var fg = ctx.createRadialGradient(0, -r * 0.05, 0, 0, r * 0.2, r * 0.9);
-  fg.addColorStop(0, 'rgba(140,220,255,1)');
-  fg.addColorStop(0.4, 'rgba(40,130,220,1)');
-  fg.addColorStop(1, 'rgba(4,20,70,1)');
-  ctx.fillStyle = fg; ctx.fill();
+  if (HM.isMobile) {
+    ctx.fillStyle = 'rgba(60,150,220,1)'; ctx.fill();
+  } else {
+    var fg = ctx.createRadialGradient(0, -r * 0.05, 0, 0, r * 0.2, r * 0.9);
+    fg.addColorStop(0, 'rgba(140,220,255,1)');
+    fg.addColorStop(0.4, 'rgba(40,130,220,1)');
+    fg.addColorStop(1, 'rgba(4,20,70,1)');
+    ctx.fillStyle = fg; ctx.fill();
+  }
   ctx.restore();
 
   return oc;
@@ -303,7 +328,7 @@ HM.startAutoFire = function() {
       })(delay);
     }
 
-    var baseInterval = HM.currentTier.fireInterval * (HM.isMobile ? 0.8 : 0.35);
+    var baseInterval = HM.currentTier.fireInterval * (HM.isMobile ? 0.5 : 0.35);
     var jitter = (Math.random() - 0.5) * baseInterval * 0.4;
     HM.autoFireTimer = setTimeout(doFire, baseInterval + jitter);
   }

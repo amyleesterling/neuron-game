@@ -106,18 +106,18 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .lc-dot:hover:not(.active) { background:rgba(79,195,247,0.4); }
 
 @media (max-width:768px) {
-  #topBar { height:40px; padding:0 10px; }
-  #topBar .title { font-size:11px; letter-spacing:0.12em; }
-  #topBar .backBtn { font-size:8px; padding:4px 8px; }
-  #statsBar { top:40px; height:26px; gap:12px; }
-  .hiveStat { font-size:8px; }
-  .hiveStat .hsNum { font-size:9px; }
-  #animalBadge { top:66px; height:28px; }
-  #animalBadge .badgeText { font-size:9px; }
-  #progressWrap { top:94px; }
-  #progressWrap .progLabel { font-size:9px; }
-  #legendPanel { width:100%; max-width:none; top:40px; }
-  #tooltip { font-size:9px; padding:8px 10px; max-width:180px; }
+  #topBar { height:44px; padding:0 10px; }
+  #topBar .title { font-size:13px; letter-spacing:0.15em; }
+  #topBar .backBtn { font-size:9px; padding:5px 10px; }
+  #statsBar { top:44px; height:30px; gap:14px; }
+  .hiveStat { font-size:11px; opacity:0.9; }
+  .hiveStat .hsNum { font-size:13px; }
+  #animalBadge { top:74px; height:32px; }
+  #animalBadge .badgeText { font-size:12px; }
+  #progressWrap { top:106px; }
+  #progressWrap .progLabel { font-size:11px; opacity:0.9; }
+  #legendPanel { width:100%; max-width:none; top:44px; }
+  #tooltip { font-size:10px; padding:8px 10px; max-width:200px; }
 }
 @media (max-width:480px) {
   #learnCard { max-width:98vw; }

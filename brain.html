@@ -316,25 +316,37 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
     for (var i = 0; i < nodes.length; i++) { cx += nodes[i].x; cy += nodes[i].y; }
     cx /= nodes.length; cy /= nodes.length;
 
-    // Sort nodes by angle from center
-    var indexed = [];
+    // Pre-assign cluster nodes that have _assignPop hints
+    var popLookup = {};
+    for (var i = 0; i < active.length; i++) popLookup[active[i].id] = active[i];
+    var unassigned = [];
     for (var i = 0; i < nodes.length; i++) {
-      var a = Math.atan2(nodes[i].y - cy, nodes[i].x - cx);
-      indexed.push({ idx: i, angle: a });
+      if (nodes[i].data._assignPop && popLookup[nodes[i].data._assignPop]) {
+        nodes[i].population = popLookup[nodes[i].data._assignPop];
+      } else {
+        unassigned.push(i);
+      }
+    }
+
+    // Sort unassigned nodes by angle from center
+    var indexed = [];
+    for (var u = 0; u < unassigned.length; u++) {
+      var ni = unassigned[u];
+      var a = Math.atan2(nodes[ni].y - cy, nodes[ni].x - cx);
+      indexed.push({ idx: ni, angle: a });
     }
     indexed.sort(function(a, b) { return a.angle - b.angle; });
 
     // Sort populations by their target angle to match spatial ordering
     var sortedWeights = weights.slice().sort(function(a, b) { return a.pop.angle - b.pop.angle; });
 
-    // Distribute nodes to populations in angular order, proportional to weights
-    var n = nodes.length;
-    var popIdx = 0;
+    // Distribute unassigned nodes to populations in angular order, proportional to weights
+    var n = indexed.length;
     var assigned = 0;
     for (var p = 0; p < sortedWeights.length; p++) {
       var count;
       if (p === sortedWeights.length - 1) {
-        count = n - assigned; // last pop gets remainder
+        count = n - assigned;
       } else {
         count = Math.round(sortedWeights[p].weight * n);
       }
@@ -414,7 +426,26 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
       if (!galleryKeys[key]) lbOnly.push(lbData[j]);
     }
 
-    // Aggregate leaderboard-only entries into cluster nodes by score range
+    // Aggregate leaderboard-only entries into cluster nodes, split across populations
+    // Use population weights to distribute: most in sensors, some in motors, fewer in pacemakers
+    var totalNeurons = galleryData.length + lbOnly.length;
+    var activePops = [];
+    for (var pi = 0; pi < POPULATIONS.length; pi++) {
+      if (totalNeurons >= POPULATIONS[pi].unlockMin) activePops.push(POPULATIONS[pi]);
+    }
+    // Get normalized weights for active populations
+    var popWeights = [];
+    var totalPW = 0;
+    for (var pi = 0; pi < activePops.length; pi++) {
+      var pw = POP_WEIGHTS[activePops[pi].id];
+      var laterPops = activePops.length - (pi + 1);
+      var w = pw.base - pw.decay * laterPops;
+      w = Math.max(0.04, w);
+      popWeights.push({ pop: activePops[pi], weight: w });
+      totalPW += w;
+    }
+    for (var pi = 0; pi < popWeights.length; pi++) popWeights[pi].weight /= totalPW;
+
     var SCORE_BINS = [1, 3, 6, 10, 15, 25, 50, Infinity];
     var clusters = [];
     for (var b = 0; b < SCORE_BINS.length; b++) {
@@ -425,17 +456,27 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
         var s = lbOnly[k].score || 0;
         if (s >= lo && s < hi) members.push(lbOnly[k]);
       }
-      if (members.length > 0) {
-        var totalScore = 0;
-        for (var m = 0; m < members.length; m++) totalScore += members[m].score || 0;
-        var label = hi === Infinity ? (lo + '+') : (lo + '-' + (hi - 1));
+      if (members.length === 0) continue;
+      var totalScore = 0;
+      for (var m = 0; m < members.length; m++) totalScore += members[m].score || 0;
+      var label = hi === Infinity ? (lo + '+') : (lo + '-' + (hi - 1));
+
+      // Split this bin across populations proportionally
+      var remaining = members.length;
+      for (var pi = 0; pi < popWeights.length; pi++) {
+        var count = pi === popWeights.length - 1 ? remaining : Math.round(members.length * popWeights[pi].weight);
+        count = Math.min(count, remaining);
+        if (count <= 0) continue;
+        remaining -= count;
+        var binScore = Math.round(totalScore * (count / members.length));
         clusters.push({
-          name: members.length + ' neurons (score ' + label + ')',
-          score: totalScore,
+          name: count + ' neurons (score ' + label + ')',
+          score: binScore,
           _hasShape: false,
           _isCluster: true,
-          _clusterCount: members.length,
+          _clusterCount: count,
           _clusterAvg: Math.round(totalScore / members.length * 10) / 10,
+          _assignPop: popWeights[pi].pop.id, // pre-assign to population
           created_at: members[0].created_at
         });
       }
@@ -466,9 +507,9 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
       var angle = (i / data.length) * Math.PI * 2;
       var cx = W / 2, cy = (H + 130) / 2;
       var spread = Math.min(W, H) * 0.35;
-      // Cluster nodes are bigger — radius proportional to sqrt of member count
+      // Cluster nodes slightly bigger but capped to blend in
       var r = d._isCluster
-        ? Math.max(8, Math.sqrt(d._clusterCount) * 2.5)
+        ? Math.min(12, Math.max(6, Math.sqrt(d._clusterCount) * 1.2))
         : Math.max(5, Math.sqrt(d.score || 1) * 2);
       nodes.push({
         x: cx + Math.cos(angle) * spread + (Math.random() - 0.5) * 40,

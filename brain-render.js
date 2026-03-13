@@ -199,7 +199,7 @@ HM.renderStatic = function() {
     if (HM.isMobile) {
       // Simple solid circles on mobile — no prerender, no glow
       bgCtx.beginPath();
-      bgCtx.arc(n.x, n.y, n.radius * 0.7, 0, Math.PI * 2);
+      bgCtx.arc(n.x, n.y, n.radius * 0.25, 0, Math.PI * 2);
       bgCtx.fillStyle = 'rgb(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ')';
       bgCtx.fill();
     } else {
@@ -217,14 +217,15 @@ HM.renderStatic = function() {
       }
     }
 
+    var outlineR = HM.isMobile ? n.radius * 0.25 : n.radius * 0.6;
     if (n.population) {
-      bgCtx.beginPath(); bgCtx.arc(n.x, n.y, n.radius * 0.6, 0, Math.PI * 2);
+      bgCtx.beginPath(); bgCtx.arc(n.x, n.y, outlineR, 0, Math.PI * 2);
       bgCtx.strokeStyle = 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0.6)';
-      bgCtx.lineWidth = 1.5;
+      bgCtx.lineWidth = HM.isMobile ? 0.8 : 1.5;
       bgCtx.stroke();
     }
 
-    if (n._isHub) {
+    if (n._isHub && !HM.isMobile) {
       bgCtx.beginPath(); bgCtx.arc(n.x, n.y, n.radius + 5, 0, Math.PI * 2);
       bgCtx.strokeStyle = 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0.35)';
       bgCtx.lineWidth = 1;
@@ -475,7 +476,7 @@ HM.animLoop = function() {
 
     if (mobile) {
       // Solid circle — no radialGradient
-      fxCtx.beginPath(); fxCtx.arc(nd.x, nd.y, nd.radius * 1.3 * fire.intensity, 0, Math.PI * 2);
+      fxCtx.beginPath(); fxCtx.arc(nd.x, nd.y, nd.radius * 0.4 * fire.intensity, 0, Math.PI * 2);
       fxCtx.fillStyle = 'rgba(' + Math.min(255, pc[0]+55) + ',' + Math.min(255, pc[1]+55) + ',' + Math.min(255, pc[2]+55) + ',' + (fire.intensity * 0.4) + ')';
       fxCtx.fill();
     } else {

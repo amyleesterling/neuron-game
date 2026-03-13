@@ -196,7 +196,13 @@ HM.renderStatic = function() {
     var n = nodes[i];
     var pc = n.population ? n.population.color : [79,195,247];
 
-    if (!HM.isMobile) {
+    if (HM.isMobile) {
+      // Simple solid circles on mobile — no prerender, no glow
+      bgCtx.beginPath();
+      bgCtx.arc(n.x, n.y, n.radius * 0.7, 0, Math.PI * 2);
+      bgCtx.fillStyle = 'rgb(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ')';
+      bgCtx.fill();
+    } else {
       var glowR = n.radius * 1.15;
       var glow = bgCtx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
       glow.addColorStop(0, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0.06)');
@@ -204,11 +210,11 @@ HM.renderStatic = function() {
       glow.addColorStop(1, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0)');
       bgCtx.beginPath(); bgCtx.arc(n.x, n.y, glowR, 0, Math.PI * 2);
       bgCtx.fillStyle = glow; bgCtx.fill();
-    }
 
-    if (n.prerender) {
-      var s = n.prerender.width;
-      bgCtx.drawImage(n.prerender, n.x - s / 2, n.y - s / 2);
+      if (n.prerender) {
+        var s = n.prerender.width;
+        bgCtx.drawImage(n.prerender, n.x - s / 2, n.y - s / 2);
+      }
     }
 
     if (n.population) {

@@ -281,9 +281,10 @@ HM.initNetwork = function(data, totalNeuronCount) {
   HM.buildLegend(neuronCount);
 
   // Prerender mini neurons
-  for (var i = 0; i < nodes.length; i++) {
-    var prScale = HM.isMobile ? 3 : 5;
-    nodes[i].prerender = HM.prerenderNeuron(nodes[i].data, Math.round(nodes[i].radius * prScale));
+  if (!HM.isMobile) {
+    for (var i = 0; i < nodes.length; i++) {
+      nodes[i].prerender = HM.prerenderNeuron(nodes[i].data, Math.round(nodes[i].radius * 5));
+    }
   }
 
   // Render static

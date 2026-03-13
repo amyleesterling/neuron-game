@@ -1,0 +1,127 @@
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; background:#000; overflow:hidden; font-family:'Courier New',monospace; color:#a0d8f0; -webkit-user-select:none; user-select:none; }
+
+/* Top bar */
+#topBar { position:fixed; top:0; left:0; right:0; height:48px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; background:rgba(0,0,0,0.88); z-index:100; border-bottom:1px solid rgba(79,195,247,0.15); }
+#topBar .title { font-size:14px; font-weight:900; letter-spacing:0.2em; color:#4fc3f7; text-transform:uppercase; }
+#topBar .navLinks { display:flex; gap:6px; }
+#topBar .backBtn { background:transparent; border:1px solid rgba(79,195,247,0.3); color:#4fc3f7; font-family:'Courier New',monospace; font-size:10px; letter-spacing:0.15em; padding:6px 14px; cursor:pointer; text-transform:uppercase; text-decoration:none; }
+#topBar .backBtn:hover { border-color:#4fc3f7; background:rgba(79,195,247,0.1); }
+
+/* Stats bar */
+#statsBar { position:fixed; top:48px; left:0; right:0; height:32px; display:flex; align-items:center; justify-content:center; gap:24px; background:rgba(0,0,0,0.8); z-index:99; border-bottom:1px solid rgba(79,195,247,0.08); }
+.hiveStat { font-size:9px; letter-spacing:0.12em; text-transform:uppercase; opacity:0.8; }
+.hiveStat .hsNum { color:#ffe566; font-weight:700; font-size:11px; margin-right:3px; }
+
+/* Animal badge */
+#animalBadge { position:fixed; top:80px; left:0; right:0; height:36px; display:flex; align-items:center; justify-content:center; gap:8px; z-index:98; }
+#animalBadge .badgeIcon { font-size:18px; }
+#animalBadge .badgeText { font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:#ffe566; font-weight:700; }
+#animalBadge .badgeBehavior { font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:#ff6b9d; margin-left:4px; }
+#progressWrap { position:fixed; top:116px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:10px; z-index:98; }
+#progressWrap .progLabel { font-size:10px; letter-spacing:0.1em; text-transform:uppercase; opacity:0.8; }
+#progressWrap .progLabel .progNum { color:#ffe566; font-weight:700; }
+#progressBar { width:140px; height:4px; background:rgba(79,195,247,0.12); border-radius:2px; overflow:hidden; }
+#progressBar .progFill { height:100%; background:linear-gradient(90deg, #4fc3f7, #ffe566); transition:width 0.5s ease; }
+
+/* Canvases */
+#bgCanvas, #fxCanvas { position:fixed; top:0; left:0; }
+#bgCanvas { z-index:1; }
+#fxCanvas { z-index:2; cursor:crosshair; }
+
+/* Tooltip */
+#tooltip { position:fixed; pointer-events:none; z-index:200; background:rgba(0,0,0,0.92); border:1px solid rgba(79,195,247,0.3); padding:10px 14px; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; display:none; max-width:220px; }
+#tooltip .ttName { color:#4fc3f7; font-weight:700; font-size:12px; margin-bottom:4px; }
+#tooltip .ttScore { color:#ffe566; }
+#tooltip .ttDate { opacity:0.4; margin-top:2px; }
+#tooltip .ttPop { margin-top:3px; font-weight:700; }
+#tooltip .ttFlag { margin-right:4px; }
+
+/* Legend panel */
+#legendBtn { background:transparent; border:1px solid rgba(79,195,247,0.3); color:#4fc3f7; font-family:'Courier New',monospace; font-size:12px; font-weight:700; width:28px; height:28px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+#legendBtn:hover { border-color:#4fc3f7; background:rgba(79,195,247,0.1); }
+#legendPanel { position:fixed; top:48px; right:0; width:320px; max-height:calc(100vh - 48px); overflow-y:auto; background:rgba(0,0,0,0.94); border-left:1px solid rgba(79,195,247,0.15); border-bottom:1px solid rgba(79,195,247,0.15); z-index:150; display:none; padding:18px 20px; scrollbar-width:thin; scrollbar-color:rgba(79,195,247,0.3) transparent; }
+#legendPanel::-webkit-scrollbar { width:6px; }
+#legendPanel::-webkit-scrollbar-track { background:transparent; }
+#legendPanel::-webkit-scrollbar-thumb { background:rgba(79,195,247,0.3); border-radius:3px; }
+#legendPanel.open { display:block; }
+#legendPanel .legTitle { font-size:13px; letter-spacing:0.15em; text-transform:uppercase; color:#4fc3f7; font-weight:700; margin-bottom:14px; }
+#legendPanel .legItem { margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid rgba(79,195,247,0.06); }
+#legendPanel .legItem:last-child { border-bottom:none; margin-bottom:0; padding-bottom:0; }
+#legendPanel .legDot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px; vertical-align:middle; }
+#legendPanel .legName { font-size:13px; letter-spacing:0.12em; text-transform:uppercase; font-weight:700; }
+#legendPanel .legUnlock { font-size:10px; letter-spacing:0.08em; text-transform:uppercase; opacity:0.35; margin-left:6px; }
+#legendPanel .legDesc { font-size:12px; line-height:1.6; letter-spacing:0.03em; opacity:0.65; margin-top:5px; text-transform:none; }
+#legendPanel .legLocked { opacity:0.25; }
+
+/* Loading */
+#loading { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:300; background:#000; }
+#loading .loadText { font-size:11px; letter-spacing:0.2em; text-transform:uppercase; opacity:0.4; }
+
+/* ── Learn Cards Overlay ── */
+#learnOverlay { position:fixed; inset:0; z-index:500; display:none; align-items:center; justify-content:center; }
+#learnOverlay.open { display:flex; }
+#learnBg { position:absolute; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); opacity:0; transition:opacity 0.4s ease; }
+#learnOverlay.open #learnBg { opacity:1; }
+
+#learnCard { position:relative; width:92vw; max-width:560px; max-height:88vh; background:rgba(6,14,20,0.96); border:1px solid rgba(79,195,247,0.25); border-radius:6px; box-shadow:0 0 60px rgba(79,195,247,0.08), 0 0 120px rgba(0,0,0,0.5); z-index:501; overflow:hidden; transform:scale(0.92); opacity:0; transition:transform 0.4s cubic-bezier(0.16,1,0.3,1), opacity 0.3s ease; }
+#learnOverlay.open #learnCard { transform:scale(1); opacity:1; }
+
+#learnCardInner { overflow-y:auto; max-height:88vh; scrollbar-width:thin; scrollbar-color:rgba(79,195,247,0.3) transparent; }
+#learnCardInner::-webkit-scrollbar { width:5px; }
+#learnCardInner::-webkit-scrollbar-track { background:transparent; }
+#learnCardInner::-webkit-scrollbar-thumb { background:rgba(79,195,247,0.3); border-radius:3px; }
+
+/* Card header */
+.lc-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px 0; }
+.lc-counter { font-size:10px; letter-spacing:0.15em; text-transform:uppercase; opacity:0.35; }
+.lc-close { background:none; border:1px solid rgba(79,195,247,0.2); color:#4fc3f7; font-family:'Courier New',monospace; font-size:16px; width:30px; height:30px; cursor:pointer; display:flex; align-items:center; justify-content:center; border-radius:3px; transition:background 0.2s, border-color 0.2s; }
+.lc-close:hover { background:rgba(79,195,247,0.1); border-color:#4fc3f7; }
+
+/* Canvas illustration area */
+.lc-canvas-wrap { position:relative; margin:16px 20px; overflow:hidden; border-radius:4px; border:1px solid rgba(79,195,247,0.1); background:rgba(0,0,0,0.4); }
+.lc-canvas-slider { display:flex; transition:transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94); }
+.lc-canvas-slide { flex:0 0 100%; }
+.lc-canvas-slide canvas { display:block; width:100%; height:220px; }
+
+/* Text content area */
+.lc-content-slider { display:flex; transition:transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94); }
+.lc-content-slide { flex:0 0 100%; padding:0 20px 8px; }
+.lc-title { font-size:14px; font-weight:900; letter-spacing:0.18em; text-transform:uppercase; color:#4fc3f7; margin-bottom:10px; }
+.lc-body { font-size:13px; line-height:1.75; letter-spacing:0.02em; color:rgba(160,216,240,0.78); }
+.lc-body em { font-style:italic; color:#ffe566; }
+
+/* CTA button for last card */
+.lc-cta { display:inline-block; margin-top:14px; padding:10px 22px; background:rgba(79,195,247,0.12); border:1px solid rgba(79,195,247,0.4); color:#4fc3f7; font-family:'Courier New',monospace; font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; text-decoration:none; cursor:pointer; transition:background 0.2s, border-color 0.2s; }
+.lc-cta:hover { background:rgba(79,195,247,0.2); border-color:#4fc3f7; }
+
+/* Navigation */
+.lc-nav { display:flex; align-items:center; justify-content:center; gap:14px; padding:14px 20px 20px; }
+.lc-arrow { background:none; border:1px solid rgba(79,195,247,0.2); color:#4fc3f7; font-family:'Courier New',monospace; font-size:16px; width:36px; height:36px; cursor:pointer; display:flex; align-items:center; justify-content:center; border-radius:3px; transition:background 0.2s, border-color 0.2s, opacity 0.2s; }
+.lc-arrow:hover { background:rgba(79,195,247,0.1); border-color:#4fc3f7; }
+.lc-arrow:disabled { opacity:0.2; cursor:default; pointer-events:none; }
+.lc-dots { display:flex; gap:8px; }
+.lc-dot { width:8px; height:8px; border-radius:50%; background:rgba(79,195,247,0.2); border:1px solid rgba(79,195,247,0.3); cursor:pointer; transition:background 0.3s, border-color 0.3s, transform 0.3s; }
+.lc-dot.active { background:#4fc3f7; border-color:#4fc3f7; transform:scale(1.3); }
+.lc-dot:hover:not(.active) { background:rgba(79,195,247,0.4); }
+
+@media (max-width:768px) {
+  #topBar { height:40px; padding:0 10px; }
+  #topBar .title { font-size:11px; letter-spacing:0.12em; }
+  #topBar .backBtn { font-size:8px; padding:4px 8px; }
+  #statsBar { top:40px; height:26px; gap:12px; }
+  .hiveStat { font-size:8px; }
+  .hiveStat .hsNum { font-size:9px; }
+  #animalBadge { top:66px; height:28px; }
+  #animalBadge .badgeText { font-size:9px; }
+  #progressWrap { top:94px; }
+  #progressWrap .progLabel { font-size:9px; }
+  #legendPanel { width:100%; max-width:none; top:40px; }
+  #tooltip { font-size:9px; padding:8px 10px; max-width:180px; }
+}
+@media (max-width:480px) {
+  #learnCard { max-width:98vw; }
+  .lc-canvas-slide canvas { height:160px; }
+  .lc-title { font-size:12px; }
+  .lc-body { font-size:12px; }
+}

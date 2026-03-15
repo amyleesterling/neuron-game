@@ -370,6 +370,16 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
     }
 
     function handleResults(res) {
+      // If 24H returned empty, auto-switch to all time
+      if (timeFilter > 0 && (!res || res.error || !res.data || res.data.length === 0)) {
+        timeFilter = 0;
+        var timeBtns = document.querySelectorAll('.filterBtn[data-time]');
+        for (var ti = 0; ti < timeBtns.length; ti++) timeBtns[ti].classList.remove('active');
+        var allBtn = document.querySelector('.filterBtn[data-time="0"]');
+        if (allBtn) allBtn.classList.add('active');
+        fetchScores(countryISO);
+        return;
+      }
       if (!res || res.error || !res.data || res.data.length === 0) {
         scoresEl.innerHTML = '<div class="noData">NO SCORES YET</div>';
         document.getElementById('panelCount').textContent = '0 players';

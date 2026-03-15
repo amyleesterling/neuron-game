@@ -752,6 +752,7 @@ function runGame() {
   var dots = [];
   var axonPts = [];
   var signals = [];
+  var somaGlow = 0;
   var occupied = {};
   var somaGX = 0;
   var somaGY = 0;
@@ -1520,7 +1521,6 @@ function runGame() {
     }
 
     // Define 3 branch origins at the 3 pointy corners of pyramidal soma
-    // Soma shape: apex at ~2 cells up, bottom corners at ~(±2, +2)
     origins = [
       {x: somaGX,   y: somaGY-2, dx: 0,  dy: -1, name: 'top'},
       {x: somaGX-2, y: somaGY+2, dx: -1, dy: 0,  name: 'left'},
@@ -2921,20 +2921,22 @@ function runGame() {
 
     // Soma
     var smx = worldX(somaGX), smy = worldY(somaGY), r = CELL * 2.8;
-    var sg = sx.createRadialGradient(smx,smy,0,smx,smy,r*1.8);
-    sg.addColorStop(0,'rgba(79,195,247,0.18)'); sg.addColorStop(1,'rgba(79,195,247,0)');
-    sx.beginPath(); sx.arc(smx,smy,r*1.8,0,Math.PI*2); sx.fillStyle=sg; sx.fill();
+    var sg = sx.createRadialGradient(smx,smy,0,smx,smy,r*2.2);
+    sg.addColorStop(0,'rgba(79,195,247,0.22)'); sg.addColorStop(0.5,'rgba(60,150,230,0.09)'); sg.addColorStop(1,'rgba(79,195,247,0)');
+    sx.beginPath(); sx.arc(smx,smy,r*2.2,0,Math.PI*2); sx.fillStyle=sg; sx.fill();
     sx.save(); sx.translate(smx,smy);
     sx.beginPath();
     sx.moveTo(0,-r*0.8);
-    sx.bezierCurveTo(r*0.25,-r*0.35,r*0.7,r*0.2,r*0.7,r*0.6);
-    sx.bezierCurveTo(r*0.4,r*0.72,-r*0.4,r*0.72,-r*0.7,r*0.6);
+    sx.bezierCurveTo(r*0.25,-r*0.35,r*0.7,r*0.2,r*0.7,r*0.7);
+    sx.bezierCurveTo(r*0.4,r*0.85,-r*0.4,r*0.85,-r*0.7,r*0.7);
     sx.bezierCurveTo(-r*0.7,r*0.2,-r*0.25,-r*0.35,0,-r*0.8);
     sx.closePath();
-    var fg2 = sx.createRadialGradient(0,-r*0.05,0,0,r*0.2,r*0.9);
-    fg2.addColorStop(0,'rgba(140,220,255,1)'); fg2.addColorStop(0.4,'rgba(40,130,220,1)'); fg2.addColorStop(1,'rgba(4,20,70,1)');
-    sx.fillStyle=fg2; sx.fill();
-    sx.strokeStyle='rgba(160,220,255,1)'; sx.lineWidth=2; sx.stroke();
+    var somaGrad = sx.createRadialGradient(0,-r*0.1,r*0.1,0,r*0.1,r*0.9);
+    somaGrad.addColorStop(0,'rgb(55,140,220)');
+    somaGrad.addColorStop(1,'rgb(30,85,175)');
+    sx.fillStyle=somaGrad; sx.fill();
+    sx.shadowColor='rgba(80,180,255,0.5)'; sx.shadowBlur=14;
+    sx.strokeStyle='rgba(100,190,255,0.35)'; sx.lineWidth=1.2; sx.stroke();
     sx.restore();
 
     // Dots
@@ -3110,6 +3112,7 @@ function runGame() {
     ctx.clearRect(0, 0, CW, CH);
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, CW, CH);
+    somaGlow = Math.max(0, somaGlow - 0.02);
 
     // Background ambient dendrites (death burst only)
     if (gState === 'dead') {
@@ -3197,33 +3200,38 @@ function runGame() {
 
     // Soma
     var smx = worldX(somaGX), smy = worldY(somaGY), r = CELL * 2.8;
-    var sg = ctx.createRadialGradient(smx, smy, 0, smx, smy, r*1.8);
-    sg.addColorStop(0, 'rgba(79,195,247,0.18)'); sg.addColorStop(1, 'rgba(79,195,247,0)');
-    ctx.beginPath(); ctx.arc(smx, smy, r*1.8, 0, Math.PI*2); ctx.fillStyle = sg; ctx.fill();
+    // Ambient glow — blooms when signal passes through
+    var glowA = 0.22 + somaGlow * 0.5;
+    var glowR = r * (2.2 + somaGlow * 1.0);
+    var sg = ctx.createRadialGradient(smx, smy, 0, smx, smy, glowR);
+    sg.addColorStop(0, 'rgba(79,195,247,' + glowA + ')'); sg.addColorStop(0.5, 'rgba(60,150,230,' + (glowA * 0.4) + ')'); sg.addColorStop(1, 'rgba(79,195,247,0)');
+    ctx.beginPath(); ctx.arc(smx, smy, glowR, 0, Math.PI*2); ctx.fillStyle = sg; ctx.fill();
     ctx.save(); ctx.translate(smx, smy);
-    // Pyramidal cell shape: sharp apex at top, wide flat base, slightly bowed sides
+    // Pyramidal cell shape — base extended to cover branch origins
     ctx.beginPath();
     ctx.moveTo(0, -r*0.8);
-    ctx.bezierCurveTo( r*0.25, -r*0.35,  r*0.7,  r*0.2,  r*0.7,  r*0.6);
-    ctx.bezierCurveTo( r*0.4,   r*0.72, -r*0.4,  r*0.72, -r*0.7,  r*0.6);
+    ctx.bezierCurveTo( r*0.25, -r*0.35,  r*0.7,  r*0.2,  r*0.7,  r*0.7);
+    ctx.bezierCurveTo( r*0.4,   r*0.85, -r*0.4,  r*0.85, -r*0.7,  r*0.7);
     ctx.bezierCurveTo(-r*0.7,   r*0.2,  -r*0.25, -r*0.35, 0,      -r*0.8);
     ctx.closePath();
-    var fg = ctx.createRadialGradient(0, -r*0.05, 0, 0, r*0.2, r*0.9);
-    fg.addColorStop(0,   'rgba(140,220,255,1)');
-    fg.addColorStop(0.4, 'rgba(40,130,220,1)');
-    fg.addColorStop(1,   'rgba(4,20,70,1)');
-    ctx.fillStyle = fg; ctx.fill();
-    ctx.strokeStyle = 'rgba(160,220,255,1)'; ctx.lineWidth = 2; ctx.stroke();
+    // Subtle radial gradient — lighter center, slightly darker edges
+    var somaGrad = ctx.createRadialGradient(0, -r*0.1, r*0.1, 0, r*0.1, r*0.9);
+    var cB = Math.round(55 + somaGlow * 40);
+    var cG = Math.round(140 + somaGlow * 50);
+    var cR = Math.round(220 + somaGlow * 30);
+    var eB = Math.round(30 + somaGlow * 25);
+    var eG = Math.round(85 + somaGlow * 40);
+    var eR = Math.round(175 + somaGlow * 30);
+    somaGrad.addColorStop(0, 'rgb(' + cB + ',' + cG + ',' + cR + ')');
+    somaGrad.addColorStop(1, 'rgb(' + eB + ',' + eG + ',' + eR + ')');
+    ctx.fillStyle = somaGrad;
+    ctx.fill();
+    // Stronger glow + bloom boost
+    ctx.shadowColor = 'rgba(80,180,255,' + (0.5 + somaGlow * 0.5) + ')';
+    ctx.shadowBlur = 14 + somaGlow * 16;
+    var strokeA = 0.35 + somaGlow * 0.4;
+    ctx.strokeStyle = 'rgba(100,190,255,' + strokeA + ')'; ctx.lineWidth = 1.2; ctx.stroke();
     ctx.restore();
-
-    // Origin dots
-    var oi;
-    for (oi = 0; oi < origins.length; oi++) {
-      var inUse = false;
-      for (bi = 0; bi < branches.length; bi++) if (branches[bi].origName === origins[oi].name) { inUse = true; break; }
-      ctx.beginPath(); ctx.arc(worldX(origins[oi].x), worldY(origins[oi].y), 3, 0, Math.PI*2);
-      ctx.fillStyle = inUse ? 'rgba(79,195,247,0.85)' : 'rgba(79,195,247,0.15)'; ctx.fill();
-    }
 
     // Dots
     var t = ts / 1000;
@@ -3262,6 +3270,9 @@ function runGame() {
       ax2 = worldX(path[idx].x); ay = worldY(path[idx].y);
       bx2 = worldX(path[idx+1].x); by2 = worldY(path[idx+1].y);
       sx2 = ax2 + (bx2-ax2)*frac; sy2 = ay + (by2-ay)*frac;
+      // Bloom soma when signal passes through it
+      var dsx = sx2 - worldX(somaGX), dsy = sy2 - worldY(somaGY);
+      if (Math.sqrt(dsx*dsx + dsy*dsy) < r * 1.2) somaGlow = Math.min(1, somaGlow + 0.15);
       inAx = (idx >= n - axonPts.length - 1);
       ctx.save();
       ctx.shadowColor = inAx ? 'rgba(255,107,157,0.9)' : 'rgba(79,195,247,0.9)';

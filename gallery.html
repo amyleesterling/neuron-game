@@ -27,7 +27,7 @@ a:hover { color:#80d8ff; }
 
 .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:16px; padding:0 24px 60px; max-width:1200px; margin:0 auto; }
 
-.card { background:rgba(79,195,247,0.03); border:1px solid rgba(79,195,247,0.1); padding:10px; text-align:center; transition:border-color 0.3s; }
+.card { background:rgba(79,195,247,0.03); border:1px solid rgba(79,195,247,0.1); padding:10px; text-align:center; transition:border-color 0.3s; position:relative; }
 .card:hover { border-color:rgba(79,195,247,0.35); }
 .card canvas { display:block; width:100%; aspect-ratio:1; background:#000; }
 .card .cardName { font-size:10px; color:#4fc3f7; letter-spacing:0.12em; text-transform:uppercase; margin-top:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -37,6 +37,8 @@ a:hover { color:#80d8ff; }
 .card.topBrain::before { content:'\1F451'; position:absolute; top:-14px; left:50%; transform:translateX(-50%); font-size:20px; filter:drop-shadow(0 0 6px rgba(255,215,0,0.6)); }
 .card.topBrain .cardName { color:#ffd700; text-shadow:0 0 8px rgba(255,215,0,0.4); }
 .cardPlatform { font-size:7px; letter-spacing:0.15em; text-transform:uppercase; margin-top:4px; padding:2px 6px; display:inline-block; border-radius:0; }
+.cardRank { position:absolute; top:6px; left:8px; font-size:11px; font-weight:700; color:rgba(79,195,247,0.6); letter-spacing:0.05em; z-index:1; }
+.card.topBrain .cardRank { color:rgba(255,215,0,0.8); }
 .cardPlatform.plat-mobile { color:rgba(76,175,80,0.7); border:1px solid rgba(76,175,80,0.25); }
 .cardPlatform.plat-desktop { color:rgba(156,120,255,0.7); border:1px solid rgba(156,120,255,0.25); }
 
@@ -288,9 +290,15 @@ a:hover { color:#80d8ff; }
     return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
   }
 
-  function createCard(entry) {
+  function createCard(entry, rank) {
     var card = document.createElement('div');
     card.className = 'card';
+    if (typeof rank === 'number') {
+      var badge = document.createElement('div');
+      badge.className = 'cardRank';
+      badge.textContent = '#' + rank;
+      card.appendChild(badge);
+    }
     var c = document.createElement('canvas');
     card.appendChild(c);
     var name = document.createElement('div');
@@ -340,7 +348,8 @@ a:hover { color:#80d8ff; }
       }
       emptyMsg.style.display = 'none';
       for (var i = 0; i < rows.length; i++) {
-        gallery.appendChild(createCard(rows[i]));
+        var rank = sortBy === 'top' ? offset + i + 1 : undefined;
+        gallery.appendChild(createCard(rows[i], rank));
       }
       offset += rows.length;
       loadMoreBtn.style.display = rows.length >= PAGE_SIZE ? '' : 'none';

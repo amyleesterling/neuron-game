@@ -25,7 +25,7 @@
 html, body { width:100%; height:100%; background:#000; overflow:hidden; font-family:'Courier New',monospace; color:#a0d8f0; touch-action:none; -webkit-user-select:none; user-select:none; }
 #hud { position:fixed; top:0; left:0; right:0; height:calc(46px + env(safe-area-inset-top, 0px)); display:flex; justify-content:space-between; align-items:center; padding:env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); background:rgba(0,0,0,0.6); z-index:10; pointer-events:none; }
 #hudTitle { font-size:17px; font-weight:900; letter-spacing:0.2em; color:#4fc3f7; }
-#hudRight { display:flex; gap:18px; }
+#hudRight { display:flex; gap:32px; }
 .hudStat { text-align:right; }
 .hudLabel { display:block; font-size:7px; letter-spacing:0.15em; opacity:0.4; text-transform:uppercase; }
 .hudVal { display:block; font-size:19px; font-weight:700; color:#4fc3f7; }
@@ -44,13 +44,13 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .bigScore { font-size:58px; font-weight:900; color:#ffe566; text-shadow:0 0 28px rgba(255,229,102,0.9); }
 .scoreLbl { font-size:9px; opacity:0.4; letter-spacing:0.2em; text-transform:uppercase; margin-top:-12px; }
 .shareRow { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:10px; }
-#mainBtn { background:transparent; border:1px solid #4fc3f7; color:#4fc3f7; font-family:'Courier New',monospace; font-size:12px; letter-spacing:0.2em; padding:13px 36px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
-.shareBtn { background:transparent; border:1px solid #ff6b9d; color:#ff6b9d; font-family:'Courier New',monospace; font-size:11px; letter-spacing:0.2em; padding:12px 24px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
+#mainBtn { background:transparent; border:2px solid #4fc3f7; color:#4fc3f7; font-family:'Courier New',monospace; font-size:12px; font-weight:700; letter-spacing:0.2em; padding:13px 36px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
+.shareBtn { background:transparent; border:2px solid #ff6b9d; color:#ff6b9d; font-family:'Courier New',monospace; font-size:11px; font-weight:700; letter-spacing:0.2em; padding:12px 24px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
 #errBox { position:fixed; bottom:0; left:0; right:0; background:#ff0033; color:#fff; font-size:11px; padding:8px 12px; z-index:999; display:none; word-break:break-all; }
 .nameRow { display:flex; gap:8px; justify-content:center; align-items:center; margin-top:8px; }
-.nameInput { background:transparent; border:1px solid #4fc3f7; color:#4fc3f7; font-family:'Courier New',monospace; font-size:13px; letter-spacing:0.1em; padding:10px 14px; width:140px; text-transform:uppercase; outline:none; border-radius:0; -webkit-appearance:none; }
+.nameInput { background:transparent; border:2px solid #4fc3f7; color:#4fc3f7; font-family:'Courier New',monospace; font-size:13px; font-weight:700; letter-spacing:0.1em; padding:10px 14px; width:140px; text-transform:uppercase; outline:none; border-radius:0; -webkit-appearance:none; }
 .nameInput::placeholder { color:rgba(79,195,247,0.35); }
-.submitBtn { background:transparent; border:1px solid #ffe566; color:#ffe566; font-family:'Courier New',monospace; font-size:11px; letter-spacing:0.15em; padding:10px 18px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
+.submitBtn { background:transparent; border:2px solid #ffe566; color:#ffe566; font-family:'Courier New',monospace; font-size:11px; font-weight:700; letter-spacing:0.15em; padding:10px 18px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
 .lbTable { margin-top:8px; border-collapse:collapse; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; }
 .lbTable th { color:rgba(160,216,240,0.4); font-weight:400; padding:3px 12px; font-size:8px; letter-spacing:0.2em; }
 .lbTable td { padding:3px 12px; }
@@ -71,10 +71,10 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 #lbArea::-webkit-scrollbar-thumb { background:rgba(79,195,247,0.3); border-radius:2px; }
 .lbTitle { font-size:9px; opacity:0.4; letter-spacing:0.2em; text-transform:uppercase; margin-top:6px; margin-bottom:2px; }
 .lbTabs { display:flex; gap:4px; justify-content:center; margin-top:14px; }
-.lbTab { background:transparent; border:1px solid rgba(79,195,247,0.25); color:rgba(160,216,240,0.4); font-family:'Courier New',monospace; font-size:9px; letter-spacing:0.15em; padding:6px 14px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
+.lbTab { background:transparent; border:2px solid rgba(79,195,247,0.25); color:rgba(160,216,240,0.4); font-family:'Courier New',monospace; font-size:9px; font-weight:700; letter-spacing:0.15em; padding:6px 14px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
 .lbTabActive { border-color:#4fc3f7; color:#4fc3f7; }
 .lbTabLocked { opacity:0.3; cursor:not-allowed; }
-.lbMoreBtn { background:transparent; border:1px solid rgba(79,195,247,0.2); color:rgba(160,216,240,0.35); font-family:'Courier New',monospace; font-size:8px; letter-spacing:0.15em; padding:6px 20px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; margin-top:6px; display:block; width:100%; }
+.lbMoreBtn { background:transparent; border:2px solid rgba(79,195,247,0.2); color:rgba(160,216,240,0.35); font-family:'Courier New',monospace; font-size:8px; font-weight:700; letter-spacing:0.15em; padding:6px 20px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; margin-top:6px; display:block; width:100%; }
 .lbMoreBtn:hover { border-color:rgba(79,195,247,0.5); color:rgba(160,216,240,0.6); }
 .lbAllTime { display:flex; align-items:center; justify-content:center; gap:6px; margin-top:10px; margin-bottom:4px; padding:6px 10px; border:1px solid rgba(255,229,102,0.15); background:rgba(255,229,102,0.03); }
 .lbAllTime .lbAtTrophy { font-size:14px; }
@@ -122,6 +122,27 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
       if (StatusBar) {
         StatusBar.hide().catch(function() {});
         StatusBar.setBackgroundColor({ color: '#000000' }).catch(function() {});
+      }
+
+      // AdMob init
+      var adsRemoved = localStorage.getItem('neuron_ads_removed') === '1';
+      var AdMob = window.Capacitor.Plugins.AdMob;
+      if (AdMob && !adsRemoved) {
+        AdMob.initialize({ initializeForTesting: true });
+      }
+
+      // RevenueCat init
+      var Purchases = window.Capacitor.Plugins.RevenueCatPurchases;
+      if (Purchases) {
+        var rcKey = /android/i.test(navigator.userAgent)
+          ? 'YOUR_REVENUECAT_GOOGLE_API_KEY'
+          : 'YOUR_REVENUECAT_APPLE_API_KEY';
+        Purchases.configure({ apiKey: rcKey });
+        Purchases.getCustomerInfo().then(function(info) {
+          if (info.customerInfo.entitlements.active['remove_ads']) {
+            localStorage.setItem('neuron_ads_removed', '1');
+          }
+        }).catch(function() {});
       }
     }
   });
@@ -179,9 +200,8 @@ function dismissBanner() {
 <div id="hud">
   <div id="hudTitle">NEURON</div>
   <div id="hudRight">
-    <div class="hudStat"><span class="hudLabel">Synapses</span><span class="hudVal" id="valScore">0</span></div>
-    <div class="hudStat"><span class="hudLabel">Branches</span><span class="hudVal" id="valBranch">0</span></div>
-    <div class="hudStat"><span class="hudLabel">Lives</span><span class="hudVal" id="valLives">❤️❤️</span></div>
+    <div class="hudStat"><span class="hudVal" id="valScore">⚡&#8201;0</span></div>
+    <div class="hudStat"><span class="hudVal" id="valLives">❤️❤️</span></div>
   </div>
 </div>
 
@@ -213,9 +233,9 @@ function dismissBanner() {
     <div class="info" id="lobbyInfo">Grow dendrites · reach synaptic targets<br>Don't cross the branches</div>
   </div>
   <button id="mainBtn">FIRE SIGNAL</button>
-  <a id="galleryLink" href="/gallery.html" style="display:none;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:1px solid rgba(79,195,247,0.35);padding:8px 20px;"><img src="/synaptica-flag-vF.jpg" style="height:14px;vertical-align:middle;margin-right:4px;border-radius:2px;"> NEURON GALLERY</a>
-  <a id="countryLbLink" href="/leaderboard.html" style="display:none;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:1px solid rgba(79,195,247,0.35);padding:8px 20px;">&#x1F30D; COUNTRY LEADERBOARDS</a>
-  <a id="lobbyLbLink" href="/leaderboard.html" style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:1px solid rgba(79,195,247,0.35);padding:8px 20px;">&#x1F30D; LEADERBOARD</a>
+  <a id="galleryLink" href="/gallery.html" style="display:none;font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:2px solid rgba(79,195,247,0.5);padding:8px 20px;"><img src="/synaptica-flag-vF.jpg" style="height:14px;vertical-align:middle;margin-right:4px;border-radius:2px;"> NEURON GALLERY</a>
+  <a id="countryLbLink" href="/leaderboard.html" style="display:none;font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:2px solid rgba(79,195,247,0.5);padding:8px 20px;">&#x1F30D; COUNTRY LEADERBOARDS</a>
+  <a id="lobbyLbLink" href="/leaderboard.html" style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:2px solid rgba(79,195,247,0.5);padding:8px 20px;">&#x1F30D; LEADERBOARD</a>
 </div>
 <div id="lobbyStats"></div>
 <a id="snakeBadge" href="https://pump.fun/coin/8e5kbfG3uFDwLEL6WCeJ9P53DDjh2W4Ls4H1EEMBpump" target="_blank" rel="noopener">powered by <span class="snakeTicker">$SNAKE</span></a>
@@ -577,7 +597,6 @@ function runGame() {
   var olBody = document.getElementById('olBody');
   var mainBtn = document.getElementById('mainBtn');
   var valScore = document.getElementById('valScore');
-  var valBranch = document.getElementById('valBranch');
   var valLives = document.getElementById('valLives');
 
   var CW, CH, CELL, COLS, ROWS;
@@ -765,6 +784,96 @@ function runGame() {
   var STRIPE_LINK_T2 = 'https://buy.stripe.com/REPLACE_WITH_T2_LINK';
   var stripeHasPurchasedBefore = !!localStorage.getItem('neuron_stripe_bought');
   var stripeTier = stripeHasPurchasedBefore ? 2 : 1;
+
+  // ── Ads & IAP ──
+  var isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  var adRoundCounter = 0;
+  var AD_FREQUENCY = 3;
+  var hasRemovedAds = localStorage.getItem('neuron_ads_removed') === '1';
+  var adMobInterstitialReady = false;
+
+  function prepareNextInterstitial() {
+    if (!isNativeApp || hasRemovedAds) return;
+    var AdMob = window.Capacitor.Plugins.AdMob;
+    if (!AdMob) return;
+    adMobInterstitialReady = false;
+    AdMob.prepareInterstitial({
+      adId: 'ca-app-pub-3940256099942544/1033173712',  // TEST ad unit ID
+      isTesting: true
+    }).then(function() {
+      adMobInterstitialReady = true;
+    }).catch(function(err) {
+      console.warn('AdMob prepare failed:', err);
+    });
+  }
+
+  function shouldShowAd() {
+    return isNativeApp && !hasRemovedAds && adMobInterstitialReady && (adRoundCounter % AD_FREQUENCY === 0);
+  }
+
+  function showInterstitialAd(onComplete) {
+    var AdMob = window.Capacitor.Plugins.AdMob;
+    if (!AdMob) { onComplete(); return; }
+    AdMob.addListener('onInterstitialAdDismissed', function() {
+      AdMob.removeAllListeners();
+      prepareNextInterstitial();
+      onComplete();
+    });
+    AdMob.addListener('onInterstitialAdFailedToShow', function() {
+      AdMob.removeAllListeners();
+      prepareNextInterstitial();
+      onComplete();
+    });
+    AdMob.showInterstitial().catch(function() { onComplete(); });
+  }
+
+  function purchaseRemoveAds() {
+    var Purchases = window.Capacitor.Plugins.RevenueCatPurchases;
+    if (!Purchases) return;
+    Purchases.getOfferings().then(function(offerings) {
+      var pkg = null;
+      if (offerings.current && offerings.current.availablePackages) {
+        for (var i = 0; i < offerings.current.availablePackages.length; i++) {
+          var p = offerings.current.availablePackages[i];
+          if (p.storeProduct.identifier === 'remove_ads_299') { pkg = p; break; }
+        }
+      }
+      if (!pkg) { alert('Product not available'); return; }
+      return Purchases.purchasePackage({ aPackage: pkg });
+    }).then(function(result) {
+      if (result && result.customerInfo.entitlements.active['remove_ads']) {
+        hasRemovedAds = true;
+        localStorage.setItem('neuron_ads_removed', '1');
+        var btn = document.getElementById('removeAdsBtn');
+        if (btn) btn.style.display = 'none';
+        alert('Ads removed! Thank you!');
+      }
+    }).catch(function(err) {
+      if (err && err.userCancelled) return;
+      console.error('Purchase failed:', err);
+    });
+  }
+
+  function restorePurchases() {
+    var Purchases = window.Capacitor.Plugins.RevenueCatPurchases;
+    if (!Purchases) return;
+    Purchases.restorePurchases().then(function(info) {
+      if (info.customerInfo.entitlements.active['remove_ads']) {
+        hasRemovedAds = true;
+        localStorage.setItem('neuron_ads_removed', '1');
+        var btn = document.getElementById('removeAdsBtn');
+        if (btn) btn.style.display = 'none';
+        alert('Purchases restored! Ads removed.');
+      } else {
+        alert('No previous purchase found.');
+      }
+    }).catch(function() { alert('Restore failed. Please try again.'); });
+  }
+
+  // Pre-load first interstitial
+  if (isNativeApp && !hasRemovedAds) {
+    prepareNextInterstitial();
+  }
 
   // ── Anti-bot: input timing tracking ──
   var inputLog = [];       // timestamps of direction changes
@@ -1674,7 +1783,7 @@ function runGame() {
     var head = b.path[b.path.length - 1];
     var nx = head.x + b.dirX;
     var ny = head.y + b.dirY;
-    if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) { triggerDeath(); return; }
+    if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) { triggerDeath('wall'); return; }
     var kk = cellKey(nx, ny);
     var i;
 
@@ -1689,6 +1798,7 @@ function runGame() {
         score++;
         gameSpd = Math.max(30, gameSpd - 2);
         sfx('score');
+        spawnScoreSparkles(worldX(nx), worldY(ny));
         launchSignal(b);
         spawnDot();
         if (Math.random() < 0.25) spawnDot();
@@ -1718,7 +1828,7 @@ function runGame() {
       }
       // Push collision cell so intersection is visually shown
       b.path.push({x: nx, y: ny});
-      triggerDeath();
+      triggerDeath('self');
       return;
     }
 
@@ -1797,30 +1907,79 @@ function runGame() {
     signals.push({path: path, t: 0, spd: 0.035, onDone: null});
   }
 
-  function spawnHitBurst(x, y) {
-    // Small instant particle burst at collision point
+  function spawnScoreSparkles(x, y) {
     var i, ang, spd;
-    for (i = 0; i < 30; i++) {
+    for (i = 0; i < 8; i++) {
       ang = Math.random() * Math.PI * 2;
-      spd = 1 + Math.random() * 4;
+      spd = 0.4 + Math.random() * 1;
       particles.push({
-        x: x, y: y,
+        x: x + Math.cos(ang) * (2 + Math.random() * 4), y: y + Math.sin(ang) * (2 + Math.random() * 4),
         vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
-        r: 2 + Math.random() * 3, a: 1,
-        col: '255,80,80',
-        dec: 0.025 + Math.random() * 0.02,
-        grav: 0.05 + Math.random() * 0.04
+        r: 1 + Math.random() * 1.5, a: 1,
+        col: '255,230,100',
+        dec: 0.025 + Math.random() * 0.015,
+        grav: 0
       });
     }
     particlesActive = true;
   }
 
-  function triggerDeath() {
+  function spawnWallSparks(x, y) {
+    // Bias sparks inward (toward canvas center) so they don't fly off-screen
+    var cx = CW / 2, cy = CH / 2;
+    var toCenter = Math.atan2(cy - y, cx - x);
+    var i, ang, spd;
+    for (i = 0; i < 10; i++) {
+      ang = toCenter + (Math.random() - 0.5) * Math.PI;
+      spd = 0.8 + Math.random() * 2;
+      particles.push({
+        x: x, y: y,
+        vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
+        r: 1.5 + Math.random() * 2, a: 0.7,
+        col: '255,100,100',
+        dec: 0.03 + Math.random() * 0.02,
+        grav: 0.03
+      });
+    }
+    particlesActive = true;
+  }
+
+  function spawnSelfSquiggles(x, y) {
+    var i, ang;
+    for (i = 0; i < 5; i++) {
+      ang = Math.random() * Math.PI * 2;
+      particles.push({
+        x: x, y: y,
+        vx: Math.cos(ang) * 1.2, vy: Math.sin(ang) * 1.2,
+        r: 1.5, a: 0.8,
+        col: '180,100,255',
+        dec: 0.018,
+        grav: 0,
+        squiggle: true,
+        ang: ang,
+        phase: Math.random() * Math.PI * 2,
+        freq: 8 + Math.random() * 5,
+        amp: 3.5 + Math.random() * 2,
+        len: 18 + Math.random() * 8
+      });
+    }
+    particlesActive = true;
+  }
+
+  var lastDeathCause = 'wall';
+
+  function triggerDeath(cause) {
     if (isDead || isHurt) return;
-    // Instant burst at branch head
+    lastDeathCause = cause || 'wall';
     var b = branches[activeIdx];
     var head = b ? b.path[b.path.length - 1] : null;
-    if (head) spawnHitBurst(worldX(head.x), worldY(head.y));
+    if (head) {
+      if (cause === 'self') {
+        spawnSelfSquiggles(worldX(head.x), worldY(head.y));
+      } else {
+        spawnWallSparks(worldX(head.x), worldY(head.y));
+      }
+    }
 
     lives--;
     if (lives > 0) {
@@ -1853,6 +2012,7 @@ function runGame() {
     //   return;
     // }
     // All lives gone — full apoptosis immediately
+    refreshHUD();
     doFullDeath();
   }
 
@@ -1864,8 +2024,25 @@ function runGame() {
     frozenBranches = branches.slice();
     frozenDots = dots.slice();
     buildParticles();
+    // Re-spawn death effect at collision point (buildParticles clears particles)
+    var db = branches[activeIdx];
+    var dh = db ? db.path[db.path.length - 1] : null;
+    if (dh) {
+      if (lastDeathCause === 'self') {
+        spawnSelfSquiggles(worldX(dh.x), worldY(dh.y));
+      } else {
+        spawnWallSparks(worldX(dh.x), worldY(dh.y));
+      }
+    }
     particlesActive = true;
-    setTimeout(showResults, 2200);
+    adRoundCounter++;
+    setTimeout(function() {
+      if (shouldShowAd()) {
+        showInterstitialAd(showResults);
+      } else {
+        showResults();
+      }
+    }, 2200);
   }
 
   function showAdLifeOffer() {
@@ -2191,6 +2368,7 @@ function runGame() {
       p.vy += p.grav;
       p.vx *= 0.98; p.vy *= 0.98;
       p.a -= p.dec;
+      if (p.squiggle) p.phase += 0.3;
     }
   }
 
@@ -2429,7 +2607,13 @@ function runGame() {
       '<div class="shareRow">' +
         '<button class="shareBtn" id="btnX">SHARE ON X</button>' +
         '<button class="shareBtn" id="btnFB">FACEBOOK</button>' +
-      '</div>';
+      '</div>' +
+      (isNativeApp && !hasRemovedAds ?
+        '<div style="margin-top:12px;text-align:center;">' +
+          '<button id="removeAdsBtn" style="background:transparent;border:2px solid rgba(76,175,80,0.4);color:#4caf50;font-family:\'Courier New\',monospace;font-size:10px;font-weight:700;letter-spacing:0.12em;padding:8px 16px;cursor:pointer;text-transform:uppercase;">REMOVE ADS \u2014 $2.99</button>' +
+          '<div style="font-size:7px;opacity:0.3;letter-spacing:0.1em;text-transform:uppercase;margin-top:4px;color:#4caf50;">one-time purchase</div>' +
+          '<div style="margin-top:6px;"><a id="restorePurchasesLink" href="#" style="font-size:8px;color:rgba(160,216,240,0.35);letter-spacing:0.1em;text-transform:uppercase;text-decoration:none;">Restore Purchases</a></div>' +
+        '</div>' : '');
     mainBtn.textContent = 'REGENERATE';
     mainBtn.style.borderColor = '#4fc3f7';
     mainBtn.style.color = '#fff';
@@ -2668,6 +2852,11 @@ function runGame() {
     var bf = document.getElementById('btnFB');
     if (bx) bx.addEventListener('click', function() { doShare('x'); });
     if (bf) bf.addEventListener('click', function() { doShare('fb'); });
+
+    var raBtn = document.getElementById('removeAdsBtn');
+    if (raBtn) raBtn.addEventListener('click', purchaseRemoveAds);
+    var rpLink = document.getElementById('restorePurchasesLink');
+    if (rpLink) rpLink.addEventListener('click', function(e) { e.preventDefault(); restorePurchases(); });
 
     if (isNewHighScore) setTimeout(startNeuronFireworks, 300);
   }
@@ -3092,20 +3281,36 @@ function runGame() {
         p = particles[pi2];
         if (p.a <= 0) continue;
         ctx.save();
-        ctx.shadowColor = 'rgba(' + p.col + ',0.8)'; ctx.shadowBlur = 8;
-        ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.4, p.r * p.a), 0, Math.PI*2);
-        ctx.fillStyle = 'rgba(' + p.col + ',' + Math.min(1, p.a) + ')'; ctx.fill();
+        if (p.squiggle) {
+          var al = Math.min(1, p.a);
+          var sLen = p.len;
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.ang);
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          for (var qi = 1; qi <= 10; qi++) {
+            var qt = qi / 10;
+            var qx = qt * sLen;
+            var qy = Math.sin(p.phase + qt * p.freq) * p.amp * al;
+            ctx.lineTo(qx, qy);
+          }
+          ctx.strokeStyle = 'rgba(' + p.col + ',' + al + ')';
+          ctx.shadowColor = 'rgba(' + p.col + ',0.6)'; ctx.shadowBlur = 6;
+          ctx.lineWidth = Math.max(1.2, 2.5 * al);
+          ctx.stroke();
+        } else {
+          ctx.shadowColor = 'rgba(' + p.col + ',0.8)'; ctx.shadowBlur = 8;
+          ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.4, p.r * p.a), 0, Math.PI*2);
+          ctx.fillStyle = 'rgba(' + p.col + ',' + Math.min(1, p.a) + ')'; ctx.fill();
+        }
         ctx.restore();
       }
     }
   }
 
   function refreshHUD() {
-    valScore.textContent = score;
-    var c = 0, i;
-    for (i = 0; i < branches.length; i++) if (branches[i].path.length > 2) c++;
-    valBranch.textContent = c;
-    var hearts = '';
+    valScore.textContent = '\u26A1\u2009' + score;
+    var hearts = '', i;
     if (lives > 5) {
       hearts = '\u2764\uFE0F\u00D7' + lives;
     } else {
@@ -3118,8 +3323,7 @@ function runGame() {
 
   function flashScore() {
     valScore.style.color = '#ffe566';
-    valScore.style.transform = 'scale(1.5)';
-    setTimeout(function() { valScore.style.color = '#4fc3f7'; valScore.style.transform = 'scale(1)'; }, 300);
+    setTimeout(function() { valScore.style.color = '#4fc3f7'; }, 300);
   }
 
   // Loop

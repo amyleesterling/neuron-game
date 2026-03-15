@@ -311,7 +311,7 @@ HM.startAutoFire = function() {
   function doFire() {
     if (nodes.length === 0) return;
 
-    var burstCount = HM.isMobile ? (2 + Math.floor(Math.random() * 3)) : (2 + Math.floor(Math.random() * 4));
+    var burstCount = HM.isMobile ? (3 + Math.floor(Math.random() * 4)) : (2 + Math.floor(Math.random() * 4));
     for (var b = 0; b < burstCount; b++) {
       var delay = b * (200 + Math.random() * 400);
       (function(d) {
@@ -351,8 +351,8 @@ HM.animLoop = function() {
   var fxCtx = HM.fxCtx;
   var W = HM.W, H = HM.H;
   var mobile = HM.isMobile;
-  var maxFires = mobile ? 40 : 50;
-  var maxSignals = mobile ? 40 : 200;
+  var maxFires = mobile ? 60 : 50;
+  var maxSignals = mobile ? 100 : 200;
   fxCtx.clearRect(0, 0, W, H);
 
   if (edges.length > 0 && HM.maxEdgeWeight === 1) {
@@ -369,7 +369,7 @@ HM.animLoop = function() {
     if (!fire.propagated && fire.intensity < HM.currentTier.threshold) {
       fire.propagated = true;
       var nodeEdges = nodes[fire.nodeIdx].edgeIndices;
-      var maxProp = mobile ? Math.min(5, nodeEdges.length) : nodeEdges.length;
+      var maxProp = mobile ? Math.min(8, nodeEdges.length) : nodeEdges.length;
       for (var e = 0; e < maxProp; e++) {
         var ei = nodeEdges[e];
         var edge = edges[ei];
@@ -377,7 +377,7 @@ HM.animLoop = function() {
         var destIdx = dir === 1 ? edge.target : edge.source;
         if (destIdx === fire.sourceIdx) continue;
         var propIntensity = fire.intensity * HM.currentTier.propagation;
-        if (mobile && (signals.length >= maxSignals || Math.random() < 0.5)) {
+        if (mobile && (signals.length >= maxSignals || Math.random() < 0.25)) {
           // Skip signal animation — fire neighbor directly (cheap)
           if (propIntensity > 0.08 && fires.length < maxFires) {
             HM.fireNode(destIdx, propIntensity * 0.7, fire.nodeIdx);
@@ -441,9 +441,13 @@ HM.animLoop = function() {
     var dotR = 2 + sig.intensity * 1.3;
 
     if (mobile) {
-      // Solid dot only — no radialGradient
-      fxCtx.beginPath(); fxCtx.arc(px, py, dotR, 0, Math.PI * 2);
-      fxCtx.fillStyle = 'rgba(' + sigColBright[0] + ',' + sigColBright[1] + ',' + sigColBright[2] + ',' + Math.min(1, sig.intensity * 1.2) + ')';
+      // Bigger dot + soft glow halo
+      var mDotR = dotR * 1.4;
+      fxCtx.beginPath(); fxCtx.arc(px, py, mDotR * 2, 0, Math.PI * 2);
+      fxCtx.fillStyle = 'rgba(' + sigCol[0] + ',' + sigCol[1] + ',' + sigCol[2] + ',' + (sig.intensity * 0.15) + ')';
+      fxCtx.fill();
+      fxCtx.beginPath(); fxCtx.arc(px, py, mDotR, 0, Math.PI * 2);
+      fxCtx.fillStyle = 'rgba(' + sigColBright[0] + ',' + sigColBright[1] + ',' + sigColBright[2] + ',' + Math.min(1, sig.intensity * 1.3) + ')';
       fxCtx.fill();
     } else {
       var dotGlow = fxCtx.createRadialGradient(px, py, 0, px, py, dotR * 1.3);
@@ -475,9 +479,13 @@ HM.animLoop = function() {
     var pc = nd.population ? nd.population.color : [200,240,255];
 
     if (mobile) {
-      // Solid circle — no radialGradient
-      fxCtx.beginPath(); fxCtx.arc(nd.x, nd.y, nd.radius * 0.4 * fire.intensity, 0, Math.PI * 2);
-      fxCtx.fillStyle = 'rgba(' + Math.min(255, pc[0]+55) + ',' + Math.min(255, pc[1]+55) + ',' + Math.min(255, pc[2]+55) + ',' + (fire.intensity * 0.4) + ')';
+      // Larger glow circle for visible firing
+      var mfR = nd.radius * 1.2 * fire.intensity;
+      fxCtx.beginPath(); fxCtx.arc(nd.x, nd.y, mfR * 2, 0, Math.PI * 2);
+      fxCtx.fillStyle = 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',' + (fire.intensity * 0.15) + ')';
+      fxCtx.fill();
+      fxCtx.beginPath(); fxCtx.arc(nd.x, nd.y, mfR, 0, Math.PI * 2);
+      fxCtx.fillStyle = 'rgba(' + Math.min(255, pc[0]+55) + ',' + Math.min(255, pc[1]+55) + ',' + Math.min(255, pc[2]+55) + ',' + (fire.intensity * 0.55) + ')';
       fxCtx.fill();
     } else {
       var glowR = nd.radius * 2 * fire.intensity;

@@ -30,7 +30,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .hudLabel { display:block; font-size:7px; letter-spacing:0.15em; opacity:0.4; text-transform:uppercase; }
 .hudVal { display:block; font-size:19px; font-weight:700; color:#4fc3f7; }
 #gameCanvas { position:fixed; top:0; left:0; display:block; }
-#overlay { position:fixed; inset:0; background:rgba(0,0,0,0.55); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; z-index:20; text-align:center; padding:32px; }
+#overlay { position:fixed; inset:0; background:rgba(0,0,0,0.55); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; z-index:20; text-align:center; padding:32px; padding-bottom:max(32px, calc(16px + env(safe-area-inset-bottom, 0px))); overflow-y:auto; -webkit-overflow-scrolling:touch; }
 #overlay h1 { font-size:52px; font-weight:900; letter-spacing:0.15em; color:#4fc3f7; text-shadow:0 0 30px rgba(79,195,247,0.9); }
 .info { font-size:11px; line-height:2.3; opacity:0.5; text-transform:uppercase; letter-spacing:0.08em; }
 #lobbyStats { position:fixed; bottom:30px; left:0; right:0; text-align:center; z-index:21; pointer-events:none; }
@@ -42,7 +42,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .lobbyStat .lsNum { font-size:22px; font-weight:700; color:#ffe566; margin-right:4px; }
 .lobbyStat .lsLabel { font-size:12px; opacity:0.55; letter-spacing:0.1em; text-transform:uppercase; }
 .bigScore { font-size:58px; font-weight:900; color:#ffe566; text-shadow:0 0 28px rgba(255,229,102,0.9); }
-.scoreLbl { font-size:9px; opacity:0.4; letter-spacing:0.2em; text-transform:uppercase; margin-top:-12px; }
+.scoreLbl { font-size:11px; opacity:0.65; letter-spacing:0.2em; text-transform:uppercase; margin-top:-12px; }
 .shareRow { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:10px; }
 #mainBtn { background:transparent; border:2px solid #4fc3f7; color:#4fc3f7; font-family:'Courier New',monospace; font-size:12px; font-weight:700; letter-spacing:0.2em; padding:13px 36px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
 .shareBtn { background:transparent; border:2px solid #ff6b9d; color:#ff6b9d; font-family:'Courier New',monospace; font-size:11px; font-weight:700; letter-spacing:0.2em; padding:12px 24px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
@@ -51,11 +51,11 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 .nameInput { background:transparent; border:2px solid #4fc3f7; color:#4fc3f7; font-family:'Courier New',monospace; font-size:13px; font-weight:700; letter-spacing:0.1em; padding:10px 14px; width:140px; text-transform:uppercase; outline:none; border-radius:0; -webkit-appearance:none; }
 .nameInput::placeholder { color:rgba(79,195,247,0.35); }
 .submitBtn { background:transparent; border:2px solid #ffe566; color:#ffe566; font-family:'Courier New',monospace; font-size:11px; font-weight:700; letter-spacing:0.15em; padding:10px 18px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
-.lbTable { margin-top:8px; border-collapse:collapse; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; }
-.lbTable th { color:rgba(160,216,240,0.4); font-weight:400; padding:3px 12px; font-size:8px; letter-spacing:0.2em; }
-.lbTable td { padding:3px 12px; }
-.lbTable .lbRank { color:rgba(160,216,240,0.35); }
-.lbTable .lbName { color:#4fc3f7; }
+.lbTable { margin-top:8px; border-collapse:collapse; font-size:13px; letter-spacing:0.08em; text-transform:uppercase; }
+.lbTable th { color:rgba(160,216,240,0.5); font-weight:400; padding:5px 12px; font-size:9px; letter-spacing:0.2em; }
+.lbTable td { padding:5px 12px; }
+.lbTable .lbRank { color:rgba(160,216,240,0.7); font-weight:500; }
+.lbTable .lbName { color:#4fc3f7; font-weight:600; }
 .lbTable .lbScore { color:#ffe566; font-weight:700; }
 .lbTable .lbYou td { color:#ff6b9d; }
 .lbTable .lbYou { animation: lbHighlight 1.5s ease-out; }
@@ -71,16 +71,16 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 #lbArea::-webkit-scrollbar-thumb { background:rgba(79,195,247,0.3); border-radius:2px; }
 .lbTitle { font-size:9px; opacity:0.4; letter-spacing:0.2em; text-transform:uppercase; margin-top:6px; margin-bottom:2px; }
 .lbTabs { display:flex; gap:4px; justify-content:center; margin-top:14px; }
-.lbTab { background:transparent; border:2px solid rgba(79,195,247,0.25); color:rgba(160,216,240,0.4); font-family:'Courier New',monospace; font-size:9px; font-weight:700; letter-spacing:0.15em; padding:6px 14px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
+.lbTab { background:transparent; border:2px solid rgba(79,195,247,0.4); color:rgba(160,216,240,0.65); font-family:'Courier New',monospace; font-size:11px; font-weight:700; letter-spacing:0.15em; padding:8px 16px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; }
 .lbTabActive { border-color:#4fc3f7; color:#4fc3f7; }
 .lbTabLocked { opacity:0.3; cursor:not-allowed; }
 .lbMoreBtn { background:transparent; border:2px solid rgba(79,195,247,0.2); color:rgba(160,216,240,0.35); font-family:'Courier New',monospace; font-size:8px; font-weight:700; letter-spacing:0.15em; padding:6px 20px; cursor:pointer; text-transform:uppercase; -webkit-appearance:none; border-radius:0; margin-top:6px; display:block; width:100%; }
 .lbMoreBtn:hover { border-color:rgba(79,195,247,0.5); color:rgba(160,216,240,0.6); }
 .lbAllTime { display:flex; align-items:center; justify-content:center; gap:6px; margin-top:10px; margin-bottom:4px; padding:6px 10px; border:1px solid rgba(255,229,102,0.15); background:rgba(255,229,102,0.03); }
 .lbAllTime .lbAtTrophy { font-size:14px; }
-.lbAllTime .lbAtLabel { font-size:7px; opacity:0.4; letter-spacing:0.12em; text-transform:uppercase; color:#ffe566; }
-.lbAllTime .lbAtName { font-size:11px; color:#4fc3f7; letter-spacing:0.08em; text-transform:uppercase; }
-.lbAllTime .lbAtScore { font-size:11px; color:#ffe566; font-weight:700; }
+.lbAllTime .lbAtLabel { font-size:9px; opacity:0.65; letter-spacing:0.12em; text-transform:uppercase; color:#ffe566; }
+.lbAllTime .lbAtName { font-size:13px; color:#4fc3f7; letter-spacing:0.08em; text-transform:uppercase; font-weight:600; }
+.lbAllTime .lbAtScore { font-size:13px; color:#ffe566; font-weight:700; }
 #adOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:50; display:none; flex-direction:column; align-items:center; justify-content:center; gap:16px; text-align:center; padding:24px; }
 #adOverlay.adShow { display:flex; }
 #adOverlay .adTitle { font-size:14px; letter-spacing:0.2em; text-transform:uppercase; color:#4fc3f7; }
@@ -233,8 +233,10 @@ function dismissBanner() {
     <div class="info" id="lobbyInfo">Grow dendrites · reach synaptic targets<br>Don't cross the branches</div>
   </div>
   <button id="mainBtn">FIRE SIGNAL</button>
-  <a id="galleryLink" href="/gallery.html" style="display:none;font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:2px solid rgba(79,195,247,0.5);padding:8px 20px;"><img src="/synaptica-flag-vF.jpg" style="height:14px;vertical-align:middle;margin-right:4px;border-radius:2px;"> NEURON GALLERY</a>
-  <a id="countryLbLink" href="/leaderboard.html" style="display:none;font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:2px solid rgba(79,195,247,0.5);padding:8px 20px;">&#x1F30D; COUNTRY LEADERBOARDS</a>
+  <div class="navRow" style="display:none;flex-direction:row;gap:8px;justify-content:center;">
+    <a id="countryLbLink" href="/leaderboard.html" style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:2px solid rgba(79,195,247,0.5);padding:8px 20px;">&#x1F30D; LEADERBOARDS</a>
+    <a id="galleryLink" href="/gallery.html" style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:2px solid rgba(79,195,247,0.5);padding:8px 20px;"><img src="/synaptica-flag-vF.jpg" style="height:14px;vertical-align:middle;margin-right:4px;border-radius:2px;"> GALLERY</a>
+  </div>
   <a id="lobbyLbLink" href="/leaderboard.html" style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:2px solid rgba(79,195,247,0.5);padding:8px 20px;">&#x1F30D; LEADERBOARD</a>
 </div>
 <div id="lobbyStats"></div>
@@ -2621,13 +2623,13 @@ function runGame() {
     mainBtn.style.fontWeight = '900';
     mainBtn.style.padding = '15px 44px';
     mainBtn.style.fontSize = '14px';
+    var navRow = document.querySelector('.navRow');
+    navRow.style.display = 'flex';
     var gl = document.getElementById('galleryLink');
-    gl.style.display = 'inline-block';
     if (score >= 2) {
       gl.style.animation = 'galleryGlow 1.5s ease-in-out 3';
       gl.addEventListener('animationend', function() { gl.style.animation = ''; }, {once: true});
     }
-    document.getElementById('countryLbLink').style.display = 'inline-block';
     document.getElementById('feedbackWidget').style.display = '';
     document.getElementById('lobbyStats').style.display = 'none';
     overlay.style.display = 'flex';
@@ -3060,8 +3062,7 @@ function runGame() {
       mainBtn.style.fontWeight = '';
       mainBtn.style.padding = '';
       mainBtn.style.fontSize = '';
-      document.getElementById('galleryLink').style.display = 'none';
-      document.getElementById('countryLbLink').style.display = 'none';
+      document.querySelector('.navRow').style.display = 'none';
       isDemo = false;
       gState = 'playing';
       ensureAudio();

@@ -233,9 +233,9 @@ function dismissBanner() {
     <div class="info" id="lobbyInfo">Grow dendrites · reach synaptic targets<br>Don't cross the branches</div>
   </div>
   <button id="mainBtn">FIRE SIGNAL</button>
-  <div class="navRow" style="display:none;flex-direction:row;gap:8px;justify-content:center;">
-    <a id="countryLbLink" href="/leaderboard.html" style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:2px solid rgba(79,195,247,0.5);padding:8px 20px;">&#x1F30D; LEADERBOARDS</a>
-    <a id="galleryLink" href="/gallery.html" style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:2px solid rgba(79,195,247,0.5);padding:8px 20px;"><img src="/synaptica-flag-vF.jpg" style="height:14px;vertical-align:middle;margin-right:4px;border-radius:2px;"> GALLERY</a>
+  <div class="navRow" style="display:none;flex-direction:row;gap:8px;justify-content:center;align-items:stretch;">
+    <a id="countryLbLink" href="/leaderboard.html" style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:2px solid rgba(79,195,247,0.5);padding:8px 20px;display:flex;align-items:center;justify-content:center;">&#x1F30D; LEADERBOARDS</a>
+    <a id="galleryLink" href="/gallery.html" style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:2px solid rgba(79,195,247,0.5);padding:8px 20px;display:flex;align-items:center;justify-content:center;"><img src="/synaptica-flag-vF.jpg" style="height:14px;vertical-align:middle;margin-right:4px;border-radius:2px;"> GALLERY</a>
   </div>
   <a id="lobbyLbLink" href="/leaderboard.html" style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:2px solid rgba(79,195,247,0.5);padding:8px 20px;">&#x1F30D; LEADERBOARD</a>
 </div>
@@ -551,9 +551,9 @@ function runGame() {
 
   function buildLeaderboardHTML(rows, myScore, label, opts) {
     opts = opts || {};
-    var title = label || (platform === 'mobile' ? '\uD83D\uDCF1 Mobile' : '\uD83D\uDDA5\uFE0F Desktop');
+    var title = label || (platform === 'mobile' ? 'Mobile' : 'Desktop');
     var timeLabel = opts.hours ? ' \u2014 Last 24h' : ' \u2014 All Time';
-    if (!rows || rows.length === 0) return '<div class="lbTitle">' + title + timeLabel + '</div><div class="info">No scores yet</div>';
+    if (!rows || rows.length === 0) return '<div class="info">No scores yet</div>';
     // Inline SVG neuron icons — soma with branching dendrites
     function neuronSVG(color) {
       return '<span class="lbMedal"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">' +
@@ -573,7 +573,7 @@ function runGame() {
       neuronSVG('#c0c0c0'),  // silver
       neuronSVG('#cd7f32')   // bronze
     ];
-    var html = '<div class="lbTitle">' + title + timeLabel + '</div><table class="lbTable"><tr><th>Rank</th><th>Name</th><th>Score</th></tr>';
+    var html = '<table class="lbTable" style="margin-left:auto;margin-right:auto;"><tr><th>Rank</th><th>Name</th><th>Score</th></tr>';
     for (var i = 0; i < rows.length; i++) {
       var isYou = (rows[i].name === playerName && rows[i].score === myScore);
       var medal = i < 3 ? medals[i] : '';
@@ -2600,9 +2600,9 @@ function runGame() {
         '<button class="submitBtn" id="submitBtn">SUBMIT</button>' +
       '</div>' : '') +
       '<div class="lbTabs">' +
-        '<button class="lbTab' + (isMobile ? ' lbTabActive' : '') + ' lbTabLocked" id="tabMobile" disabled>\uD83D\uDCF1 MOBILE</button>' +
-        '<button class="lbTab' + (!isMobile ? ' lbTabActive' : '') + ' lbTabLocked" id="tabDesktop" disabled>\uD83D\uDDA5\uFE0F DESKTOP</button>' +
-        '<button class="lbTab lbTabLocked" id="tabTime" disabled style="margin-left:4px;">&#x23F0; 24H</button>' +
+        '<button class="lbTab' + (isMobile ? ' lbTabActive' : '') + ' lbTabLocked" id="tabMobile" disabled>MOBILE</button>' +
+        '<button class="lbTab' + (!isMobile ? ' lbTabActive' : '') + ' lbTabLocked" id="tabDesktop" disabled>DESKTOP</button>' +
+        '<button class="lbTab lbTabLocked" id="tabTime" disabled style="margin-left:4px;">24H</button>' +
       '</div>' +
       '<div id="lbAllTimeBar"></div>' +
       '<div id="lbArea"><div class="lbTitle">Loading leaderboard...</div></div>' +
@@ -2655,13 +2655,13 @@ function runGame() {
       if (tm) { tm.className = 'lbTab' + (plat === 'mobile' ? ' lbTabActive' : ''); }
       if (td) { td.className = 'lbTab' + (plat === 'desktop' ? ' lbTabActive' : ''); }
       if (tt) {
-        tt.textContent = viewHours ? '\u23F0 24H' : '\u2605 ALL TIME';
+        tt.textContent = viewHours ? '24H' : '\u2605 ALL TIME';
         tt.className = 'lbTab lbTabActive';
         tt.style.borderColor = viewHours ? '' : '#ffe566';
         tt.style.color = viewHours ? '' : '#ffe566';
       }
       fetchLeaderboard(plat, function(rows) {
-        var label = plat === 'mobile' ? '\uD83D\uDCF1 Mobile' : '\uD83D\uDDA5\uFE0F Desktop';
+        var label = plat === 'mobile' ? 'Mobile' : 'Desktop';
         lbArea.innerHTML = buildLeaderboardHTML(rows, sc, label, {hours: viewHours, currentLimit: LB_PAGE_SIZE});
         attachMoreBtn(plat, sc, label, LB_PAGE_SIZE);
       }, {hours: viewHours});
@@ -2752,7 +2752,8 @@ function runGame() {
             nudge.style.cssText = 'text-align:center;margin-top:6px;animation:galleryNudgeFade 4.5s ease-in-out forwards;';
             nudge.innerHTML = '<span style="font-size:10px;letter-spacing:0.12em;color:#ffe566;text-transform:uppercase;">your neuron earned a place in the gallery</span>' +
               '<div style="animation:galleryArrowBounce 0.6s ease-in-out infinite;color:#4fc3f7;font-size:16px;margin-top:2px;">&#8595;</div>';
-            gl.parentNode.insertBefore(nudge, gl);
+            var navRow = document.querySelector('.navRow');
+            navRow.parentNode.insertBefore(nudge, navRow);
             // Restart gallery glow
             gl.style.animation = 'none';
             void gl.offsetWidth;

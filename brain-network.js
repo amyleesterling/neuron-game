@@ -277,7 +277,8 @@ HM.initNetwork = function(data, totalNeuronCount) {
   // Run layout
   HM.runForceLayout();
 
-  // Build legend
+  // Build side panels
+  HM.buildSpeciesList(neuronCount);
   HM.buildLegend(neuronCount);
 
   // Prerender mini neurons

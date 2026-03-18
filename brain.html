@@ -16,7 +16,8 @@
     <a class="backBtn" href="/gallery.html">GALLERY</a>
     <a class="backBtn" href="/leaderboard.html">LEADERBOARD</a>
     <button class="backBtn" id="learnBtn" onclick="window._learnCards.open()">LEARN</button>
-    <button id="legendBtn" onclick="document.getElementById('legendPanel').classList.toggle('open')" title="Neural populations">?</button>
+    <button id="speciesBtn" onclick="window.HM.togglePanel('speciesPanel')" title="Species unlocked">S</button>
+    <button id="legendBtn" onclick="window.HM.togglePanel('legendPanel')" title="Neural populations">?</button>
   </div>
 </div>
 <div id="statsBar">
@@ -43,7 +44,12 @@
   <div class="ttDate" id="ttDate"></div>
 </div>
 
-<div id="legendPanel">
+<div id="speciesPanel" class="sidePanel">
+  <div class="legTitle">SPECIES UNLOCKED</div>
+  <div id="speciesItems"></div>
+</div>
+
+<div id="legendPanel" class="sidePanel">
   <div class="legTitle">NEURAL POPULATIONS</div>
   <div id="legendItems"></div>
 </div>

@@ -53,9 +53,99 @@ HM.ANIMAL_SVGS = {
   fruitfly: function(s) {
     s = s || 24;
     return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><ellipse cx="12" cy="8" rx="2.5" ry="2" fill="#3a6a6a" opacity="0.5"/><ellipse cx="12" cy="8" rx="2.5" ry="2" stroke="#5fb8b8" stroke-width="1" fill="none"/><ellipse cx="12" cy="14" rx="3.5" ry="5" fill="#3a6a6a" opacity="0.5"/><ellipse cx="12" cy="14" rx="3.5" ry="5" stroke="#5fb8b8" stroke-width="1" fill="none"/><ellipse cx="6" cy="9" rx="4" ry="6" stroke="#5fb8b8" stroke-width="0.8" fill="none" opacity="0.4" transform="rotate(-30 6 9)"/><ellipse cx="18" cy="9" rx="4" ry="6" stroke="#5fb8b8" stroke-width="0.8" fill="none" opacity="0.4" transform="rotate(30 18 9)"/><circle cx="11" cy="7" r="0.8" fill="#ff6b6b" opacity="0.8"/><circle cx="13" cy="7" r="0.8" fill="#ff6b6b" opacity="0.8"/><line x1="11" y1="6" x2="9" y2="3" stroke="#5fb8b8" stroke-width="0.7" stroke-linecap="round"/><line x1="13" y1="6" x2="15" y2="3" stroke="#5fb8b8" stroke-width="0.7" stroke-linecap="round"/><line x1="10" y1="12" x2="7" y2="14" stroke="#5fb8b8" stroke-width="0.6" stroke-linecap="round"/><line x1="14" y1="12" x2="17" y2="14" stroke="#5fb8b8" stroke-width="0.6" stroke-linecap="round"/><line x1="10" y1="15" x2="6" y2="17" stroke="#5fb8b8" stroke-width="0.6" stroke-linecap="round"/><line x1="14" y1="15" x2="18" y2="17" stroke="#5fb8b8" stroke-width="0.6" stroke-linecap="round"/></svg>';
+  },
+  eldritchgoldfish: function(s) {
+    s = s || 24;
+    return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><path d="M4 12 C4 9 7 7 12 7 C16 7 19 9 21 12 C19 15 16 17 12 17 C7 17 4 15 4 12Z" fill="#3a6a6a" opacity="0.45"/><path d="M4 12 C4 9 7 7 12 7 C16 7 19 9 21 12 C19 15 16 17 12 17 C7 17 4 15 4 12Z" stroke="#5fb8b8" stroke-width="1.1" fill="none"/><path d="M21 12 L24 9.5 L24 14.5 Z" fill="#3a6a6a" opacity="0.45" stroke="#5fb8b8" stroke-width="0.9"/><circle cx="8" cy="11" r="1" fill="#a0e0e0"/><path d="M11 6 L10 3" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round"/><path d="M14 6 L16 3.5" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round"/><path d="M12 7 Q10 4 7 4" stroke="#5fb8b8" stroke-width="0.7" opacity="0.7" fill="none"/><path d="M14 17 Q16 20 19 20" stroke="#5fb8b8" stroke-width="0.7" opacity="0.7" fill="none"/></svg>';
+  },
+  dungeonroomba: function(s) {
+    s = s || 24;
+    return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7" fill="#3a6a6a" opacity="0.45"/><circle cx="12" cy="12" r="7" stroke="#5fb8b8" stroke-width="1.2" fill="none"/><circle cx="12" cy="12" r="2" stroke="#5fb8b8" stroke-width="0.8" fill="none" opacity="0.7"/><path d="M8 5 L6 2" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round"/><path d="M16 5 L18 2" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round"/><path d="M5 8 L2 6" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round"/><path d="M19 8 L22 6" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round"/><path d="M6 18 L3 21" stroke="#ff6b6b" stroke-width="1" stroke-linecap="round"/><path d="M18 18 L21 21" stroke="#ff6b6b" stroke-width="1" stroke-linecap="round"/></svg>';
+  },
+  gelatinouscube: function(s) {
+    s = s || 24;
+    return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="#3a6a6a" opacity="0.45"/><rect x="6" y="6" width="12" height="12" rx="1.5" stroke="#5fb8b8" stroke-width="1.2" fill="none"/><path d="M8 9 L16 9" stroke="#5fb8b8" stroke-width="0.7" opacity="0.5"/><path d="M8 12 L16 12" stroke="#5fb8b8" stroke-width="0.7" opacity="0.35"/><path d="M8 15 L16 15" stroke="#5fb8b8" stroke-width="0.7" opacity="0.5"/><circle cx="10" cy="11" r="0.8" fill="#a0e0e0"/><circle cx="14" cy="13" r="0.7" fill="#a0e0e0"/></svg>';
+  },
+  buzzlightyear: function(s) {
+    s = s || 24;
+    return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><path d="M12 3 L16 8 L14 8 L14 15 L10 15 L10 8 L8 8 Z" fill="#3a6a6a" opacity="0.45" stroke="#5fb8b8" stroke-width="1" stroke-linejoin="round"/><path d="M8.5 15 L6.5 19" stroke="#5fb8b8" stroke-width="1" stroke-linecap="round"/><path d="M15.5 15 L17.5 19" stroke="#5fb8b8" stroke-width="1" stroke-linecap="round"/><path d="M10 10 L7 12" stroke="#5fb8b8" stroke-width="0.9" stroke-linecap="round"/><path d="M14 10 L17 12" stroke="#5fb8b8" stroke-width="0.9" stroke-linecap="round"/><circle cx="12" cy="6" r="1.2" fill="#a0e0e0"/><path d="M6.5 12 Q4 10 3 7" stroke="#5fb8b8" stroke-width="0.8" opacity="0.6" fill="none"/><path d="M17.5 12 Q20 10 21 7" stroke="#5fb8b8" stroke-width="0.8" opacity="0.6" fill="none"/></svg>';
+  },
+  mimicchest: function(s) {
+    s = s || 24;
+    return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none"><path d="M5 10 C5 7.5 7 6 12 6 C17 6 19 7.5 19 10 L19 16 C19 18 17.5 19 12 19 C6.5 19 5 18 5 16 Z" fill="#3a6a6a" opacity="0.45"/><path d="M5 10 C5 7.5 7 6 12 6 C17 6 19 7.5 19 10 L19 16 C19 18 17.5 19 12 19 C6.5 19 5 18 5 16 Z" stroke="#5fb8b8" stroke-width="1.1" fill="none"/><path d="M5 11.5 L19 11.5" stroke="#5fb8b8" stroke-width="0.8"/><circle cx="10" cy="10" r="0.8" fill="#a0e0e0"/><circle cx="14" cy="10" r="0.8" fill="#a0e0e0"/><path d="M9 14 Q12 17 15 14" stroke="#ff6b6b" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M9 15 L7 18" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round"/><path d="M15 15 L17 18" stroke="#5fb8b8" stroke-width="0.8" stroke-linecap="round"/></svg>';
   }
 };
 
-HM.animalSVG = function(id, size) { return HM.ANIMAL_SVGS[id] ? HM.ANIMAL_SVGS[id](size) : ''; };
+HM.hashIconSeed = function(seed) {
+  var hash = 0;
+  for (var i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash);
+};
+
+HM.autoIconLabel = function(seed) {
+  var parts = seed.replace(/^auto:/, '').split('-');
+  var letters = '';
+  for (var i = 0; i < parts.length && letters.length < 2; i++) {
+    if (parts[i]) letters += parts[i].charAt(0).toUpperCase();
+  }
+  if (!letters && seed) letters = seed.slice(0, 2).toUpperCase();
+  return letters || 'HM';
+};
+
+HM.autoBadgeSVG = function(seed, size) {
+  size = size || 24;
+  var palettes = [
+    ['#5fb8b8', '#2f6f73', '#a0e0e0'],
+    ['#76d6ff', '#1f4f7a', '#d7f8ff'],
+    ['#ff9e66', '#6a3d24', '#ffe0c9'],
+    ['#e98cff', '#5e2d72', '#f5d7ff'],
+    ['#a8ff8a', '#345f2b', '#e7ffd9'],
+    ['#ffe066', '#6a5615', '#fff7c2'],
+    ['#ff8da1', '#6a2740', '#ffd6df']
+  ];
+  var hash = HM.hashIconSeed(seed);
+  var palette = palettes[hash % palettes.length];
+  var label = HM.autoIconLabel(seed);
+  var shapeType = hash % 4;
+  var accentType = hash % 5;
+  var shape = '';
+  if (shapeType === 0) {
+    shape = '<circle cx="12" cy="12" r="8.2" fill="' + palette[1] + '" opacity="0.96"/><circle cx="12" cy="12" r="8.2" stroke="' + palette[0] + '" stroke-width="1.2" fill="none"/>';
+  } else if (shapeType === 1) {
+    shape = '<rect x="4.5" y="4.5" width="15" height="15" rx="4" fill="' + palette[1] + '" opacity="0.96"/><rect x="4.5" y="4.5" width="15" height="15" rx="4" stroke="' + palette[0] + '" stroke-width="1.2" fill="none"/>';
+  } else if (shapeType === 2) {
+    shape = '<path d="M12 3.6 L19.2 7.8 L19.2 16.2 L12 20.4 L4.8 16.2 L4.8 7.8 Z" fill="' + palette[1] + '" opacity="0.96"/><path d="M12 3.6 L19.2 7.8 L19.2 16.2 L12 20.4 L4.8 16.2 L4.8 7.8 Z" stroke="' + palette[0] + '" stroke-width="1.2" fill="none"/>';
+  } else {
+    shape = '<path d="M12 3.5 L18.6 6.3 L18.6 12.2 C18.6 16.1 15.9 19.2 12 20.5 C8.1 19.2 5.4 16.1 5.4 12.2 L5.4 6.3 Z" fill="' + palette[1] + '" opacity="0.96"/><path d="M12 3.5 L18.6 6.3 L18.6 12.2 C18.6 16.1 15.9 19.2 12 20.5 C8.1 19.2 5.4 16.1 5.4 12.2 L5.4 6.3 Z" stroke="' + palette[0] + '" stroke-width="1.2" fill="none"/>';
+  }
+
+  var accent = '';
+  if (accentType === 0) {
+    accent = '<circle cx="7.2" cy="7.6" r="1.1" fill="' + palette[2] + '" opacity="0.95"/><circle cx="17.4" cy="16.8" r="0.9" fill="' + palette[2] + '" opacity="0.9"/>';
+  } else if (accentType === 1) {
+    accent = '<path d="M7 17 Q12 6 17 17" stroke="' + palette[0] + '" stroke-width="1.1" opacity="0.7" fill="none"/>';
+  } else if (accentType === 2) {
+    accent = '<path d="M6.8 9.2 L9 9.6 L10 7.6 L11 9.6 L13.2 9.2 L11.7 10.8 L12.3 13 L10 11.8 L7.7 13 L8.3 10.8 Z" fill="' + palette[2] + '" opacity="0.85"/>';
+  } else if (accentType === 3) {
+    accent = '<path d="M6 15.7 C8.1 13.6 15.9 13.6 18 15.7" stroke="' + palette[0] + '" stroke-width="1" opacity="0.7" fill="none"/>';
+  } else {
+    accent = '<circle cx="12" cy="12" r="6.2" stroke="' + palette[0] + '" stroke-width="0.9" opacity="0.35" fill="none"/>';
+  }
+
+  var fontSize = label.length > 1 ? 7.2 : 9.5;
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none">' +
+    '<defs><radialGradient id="g' + hash + '" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(12 9) rotate(90) scale(12)"><stop stop-color="' + palette[2] + '" stop-opacity="0.45"/><stop offset="1" stop-color="' + palette[1] + '" stop-opacity="0"/></radialGradient></defs>' +
+    '<circle cx="12" cy="12" r="11" fill="url(#g' + hash + ')"/>' +
+    shape + accent +
+    '<text x="12" y="14.4" text-anchor="middle" font-family="Courier New, monospace" font-size="' + fontSize + '" font-weight="700" fill="' + palette[2] + '">' + label + '</text>' +
+    '</svg>';
+};
+
+HM.animalSVG = function(id, size) {
+  if (HM.ANIMAL_SVGS[id]) return HM.ANIMAL_SVGS[id](size);
+  return HM.autoBadgeSVG(id || 'hm', size);
+};
 
 window.HM = HM;

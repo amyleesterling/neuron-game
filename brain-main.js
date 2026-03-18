@@ -42,19 +42,41 @@
   HM.initLearnCards();
 
   // ── Fetch data from both sources and merge ──
+  function fetchAllRows(table, columns, options) {
+    var pageSize = 1000;
+    var start = 0;
+    var rows = [];
+
+    function loadPage() {
+      var query = sb.from(table)
+        .select(columns)
+        .order('score', { ascending: false })
+        .range(start, start + pageSize - 1);
+
+      if (options && options.gtScoreZero) {
+        query = query.gt('score', 0);
+      }
+
+      return query.then(function(res) {
+        var page = res.data || [];
+        rows = rows.concat(page);
+        if (page.length === pageSize) {
+          start += pageSize;
+          return loadPage();
+        }
+        return rows;
+      });
+    }
+
+    return loadPage();
+  }
+
   Promise.all([
-    sb.from('neuron_gallery')
-      .select('name, score, branches, soma_x, soma_y, axon_pts, cols, rows, created_at')
-      .order('score', { ascending: false }),
-    sb.from('neuron_snake_leaderboard')
-      .select('name, score, created_at')
-      .gt('score', 0)
-      .order('score', { ascending: false })
+    fetchAllRows('neuron_gallery', 'name, score, branches, soma_x, soma_y, axon_pts, cols, rows, created_at'),
+    fetchAllRows('neuron_snake_leaderboard', 'name, score, created_at', { gtScoreZero: true })
   ]).then(function(results) {
-    var galleryRes = results[0];
-    var lbRes = results[1];
-    var galleryData = (galleryRes.data || []);
-    var lbData = (lbRes.data || []);
+    var galleryData = results[0] || [];
+    var lbData = results[1] || [];
 
     var galleryKeys = {};
     for (var i = 0; i < galleryData.length; i++) {

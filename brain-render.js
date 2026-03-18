@@ -311,7 +311,7 @@ HM.startAutoFire = function() {
   function doFire() {
     if (nodes.length === 0) return;
 
-    var burstCount = HM.isMobile ? (3 + Math.floor(Math.random() * 4)) : (2 + Math.floor(Math.random() * 4));
+    var burstCount = HM.isMobile ? (4 + Math.floor(Math.random() * 5)) : (2 + Math.floor(Math.random() * 4));
     for (var b = 0; b < burstCount; b++) {
       var delay = b * (200 + Math.random() * 400);
       (function(d) {
@@ -335,7 +335,7 @@ HM.startAutoFire = function() {
       })(delay);
     }
 
-    var baseInterval = HM.currentTier.fireInterval * (HM.isMobile ? 0.35 : 0.35);
+    var baseInterval = HM.currentTier.fireInterval * (HM.isMobile ? 0.28 : 0.35);
     var jitter = (Math.random() - 0.5) * baseInterval * 0.4;
     HM.autoFireTimer = setTimeout(doFire, baseInterval + jitter);
   }
@@ -351,8 +351,8 @@ HM.animLoop = function() {
   var fxCtx = HM.fxCtx;
   var W = HM.W, H = HM.H;
   var mobile = HM.isMobile;
-  var maxFires = mobile ? 60 : 50;
-  var maxSignals = mobile ? 100 : 200;
+  var maxFires = mobile ? 85 : 50;
+  var maxSignals = mobile ? 120 : 200;
   fxCtx.clearRect(0, 0, W, H);
 
   if (edges.length > 0 && HM.maxEdgeWeight === 1) {
@@ -377,7 +377,7 @@ HM.animLoop = function() {
         var destIdx = dir === 1 ? edge.target : edge.source;
         if (destIdx === fire.sourceIdx) continue;
         var propIntensity = fire.intensity * HM.currentTier.propagation;
-        if (mobile && (signals.length >= maxSignals || Math.random() < 0.25)) {
+        if (mobile && (signals.length >= maxSignals || Math.random() < 0.18)) {
           // Skip signal animation — fire neighbor directly (cheap)
           if (propIntensity > 0.08 && fires.length < maxFires) {
             HM.fireNode(destIdx, propIntensity * 0.7, fire.nodeIdx);
@@ -388,7 +388,7 @@ HM.animLoop = function() {
             if (signals[s].edgeIdx === ei && signals[s].direction === dir) { dup = true; break; }
           }
           if (!dup) {
-            var speed = 0.012 + 0.008 * (edge.weight / HM.maxEdgeWeight);
+            var speed = 0.012 + 0.008 * (edge.weight / HM.maxEdgeWeight); if (mobile) speed *= 1.2;
             signals.push({ edgeIdx: ei, progress: 0, speed: speed, direction: dir, intensity: propIntensity });
           }
         }

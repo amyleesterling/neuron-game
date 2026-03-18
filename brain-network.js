@@ -132,7 +132,7 @@ HM.runForceLayout = function() {
   var W = HM.W, H = HM.H;
   var n = nodes.length;
   var k = Math.sqrt((W * H) / n) * 0.7;
-  var iterations = HM.isMobile ? 100 : 250;
+  var iterations = HM.isMobile ? 110 : 250;
   var temp = Math.min(W, H) * 0.15;
   var cooling = temp / iterations;
   var margin = 60;
@@ -249,7 +249,7 @@ HM.initNetwork = function(data, totalNeuronCount) {
   if (next) {
     var needed = next.min - neuronCount;
     document.getElementById('progressWrap').style.display = 'flex';
-    document.getElementById('progLabel').innerHTML = '<span class="progNum">' + needed.toLocaleString() + '</span> neurons until ' + next.name.toUpperCase();
+    document.getElementById('progLabel').innerHTML = '~species unlock in <span class="progNum">' + needed.toLocaleString() + '</span> neurons';
     var prevMin = HM.currentTier.min;
     var pct = Math.min(100, ((neuronCount - prevMin) / (next.min - prevMin)) * 100);
     document.getElementById('progFill').style.width = pct + '%';

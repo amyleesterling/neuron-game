@@ -191,13 +191,8 @@ HM.buildSpeciesList = function(neuronCount) {
   }
 
   if (nextTier) {
-    html = '<div class="legItem speciesNext">' +
-      '<div class="speciesMeta">' +
-      '<span class="speciesIcon">' + HM.animalSVG(nextTier.iconId, 18) + '</span>' +
-      '<span class="legName speciesName">' + nextTier.name + '</span>' +
-      '<span class="speciesThreshold">' + nextTier.min.toLocaleString() + '</span>' +
-      '</div>' +
-      '<div class="speciesStatus">Next in ' + (nextTier.min - neuronCount).toLocaleString() + ' neurons</div>' +
+    html = '<div class="legItem speciesNext speciesHint">' +
+      '<div class="speciesStatus">~ Species unlock in ' + (nextTier.min - neuronCount).toLocaleString() + ' neurons</div>' +
       '</div>' + html;
   }
 

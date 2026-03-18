@@ -171,7 +171,8 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
   </div>
   <button id="mainBtn">FIRE SIGNAL</button>
   <div class="navRow" style="display:none;flex-direction:row;gap:8px;justify-content:center;align-items:stretch;">
-    <a id="countryLbLink" href="/leaderboard.html" style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:2px solid rgba(79,195,247,0.5);padding:8px 20px;display:flex;align-items:center;justify-content:center;">&#x1F30D; LEADERBOARDS</a>
+    <a id="countryLbLink" href="/leaderboard.html" style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:2px solid rgba(79,195,247,0.5);padding:8px 20px;display:flex;align-items:center;justify-content:center;">&#x1F30D; LEADERBOARD</a>
+    <a id="hiveMindLink" href="/brain.html" style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#ffe566;text-decoration:none;border:2px solid rgba(255,229,102,0.45);padding:8px 20px;display:flex;align-items:center;justify-content:center;">THE HIVE MIND</a>
     <a id="galleryLink" href="/gallery.html" style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:2px solid rgba(79,195,247,0.5);padding:8px 20px;display:flex;align-items:center;justify-content:center;"><img src="/synaptica-flag-vF.jpg" style="height:14px;vertical-align:middle;margin-right:4px;border-radius:2px;"> GALLERY</a>
   </div>
   <a id="lobbyLbLink" href="/leaderboard.html" style="font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#4fc3f7;text-decoration:none;border:2px solid rgba(79,195,247,0.5);padding:8px 20px;">&#x1F30D; LEADERBOARD</a>
@@ -2527,7 +2528,8 @@ function runGame() {
     var navRow = document.querySelector('.navRow');
     navRow.style.display = 'flex';
     var gl = document.getElementById('galleryLink');
-    if (score >= 2) {
+    if (gl) gl.style.display = window.innerWidth <= 640 ? 'none' : 'flex';
+    if (score >= 2 && gl && gl.style.display !== 'none') {
       gl.style.animation = 'galleryGlow 1.5s ease-in-out 3';
       gl.addEventListener('animationend', function() { gl.style.animation = ''; }, {once: true});
     }
@@ -2641,7 +2643,7 @@ function runGame() {
       submitBtnEl.className = 'submitBtn submitFlash';
       submitScore(n, score, function() {
         // Show congrats nudge pointing to gallery link
-        if (gallerySaved) {
+        if (gallerySaved && window.innerWidth > 640) {
           setTimeout(function() {
             var gl = document.getElementById('galleryLink');
             if (!gl) return;

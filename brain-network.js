@@ -126,46 +126,12 @@ HM.buildEdges = function() {
 };
 
 // ── Force-directed layout (v2: directional bias) ──
-HM.getLayoutRegion = function(pop, W, topMargin, usableW, usableH) {
-  var role = pop ? pop.role : 'bridge';
-  var centerY = topMargin + usableH * 0.58;
-  var lift = pop ? (0.5 - pop.yBand) * usableH * 0.42 : 0;
-  if (role === 'input') {
-    return { cx: W * 0.37 + ((pop.xBand || 0.15) - 0.15) * usableW * 0.08, cy: centerY + lift, rx: usableW * 0.18, ry: usableH * 0.32 };
-  }
-  if (role === 'output') {
-    return { cx: W * 0.63 + ((pop.xBand || 0.85) - 0.85) * usableW * 0.08, cy: centerY + lift, rx: usableW * 0.18, ry: usableH * 0.32 };
-  }
-  return { cx: W * 0.5 + ((pop && pop.xBand ? pop.xBand : 0.5) - 0.5) * usableW * 0.12, cy: centerY + lift * 0.85 - usableH * 0.02, rx: usableW * 0.12, ry: usableH * 0.24 };
-};
-
-HM.constrainToBrain = function(node, W, H, margin, topMargin, usableW, usableH) {
-  var region = HM.getLayoutRegion(node.population, W, topMargin, usableW, usableH);
-  var dx = node.x - region.cx;
-  var dy = node.y - region.cy;
-  var norm = (dx * dx) / (region.rx * region.rx) + (dy * dy) / (region.ry * region.ry);
-  if (norm > 1) {
-    var scale = 1 / Math.sqrt(norm);
-    node.x = region.cx + dx * scale;
-    node.y = region.cy + dy * scale;
-  }
-  var notchY = topMargin + usableH * 0.2;
-  var notchHalf = usableW * 0.055;
-  var midDx = node.x - W / 2;
-  if (node.y < notchY && Math.abs(midDx) < notchHalf) {
-    var push = (notchHalf - Math.abs(midDx)) / notchHalf;
-    node.x += (midDx <= 0 ? -1 : 1) * push * 8;
-    node.y += push * 10;
-  }
-  node.x = Math.max(margin * 0.65, Math.min(W - margin * 0.65, node.x));
-  node.y = Math.max(topMargin - 10, Math.min(H - margin * 0.35, node.y));
-};
 HM.runForceLayout = function() {
   var nodes = HM.nodes;
   var edges = HM.edges;
   var W = HM.W, H = HM.H;
   var n = nodes.length;
-  var k = Math.sqrt((W * H) / n) * 0.68;
+  var k = Math.sqrt((W * H) / n) * 0.7;
   var iterations = HM.isMobile ? 110 : 250;
   var temp = Math.min(W, H) * 0.15;
   var cooling = temp / iterations;
@@ -177,6 +143,7 @@ HM.runForceLayout = function() {
   for (var iter = 0; iter < iterations; iter++) {
     for (var i = 0; i < n; i++) { nodes[i].vx = 0; nodes[i].vy = 0; }
 
+    // Repulsion
     var repulseRadius = k * 4;
     for (var i = 0; i < n; i++) {
       for (var j = i + 1; j < n; j++) {
@@ -185,13 +152,14 @@ HM.runForceLayout = function() {
         var d = Math.sqrt(dx * dx + dy * dy);
         if (d > repulseRadius) continue;
         d = Math.max(d, 1);
-        var force = (k * k) / (d * d) * 1.9;
+        var force = (k * k) / (d * d) * 2;
         var fx = (dx / d) * force, fy = (dy / d) * force;
         nodes[i].vx += fx; nodes[i].vy += fy;
         nodes[j].vx -= fx; nodes[j].vy -= fy;
       }
     }
 
+    // Attraction (edges)
     for (var e = 0; e < edges.length; e++) {
       var s = nodes[edges[e].source], t = nodes[edges[e].target];
       var dx = t.x - s.x, dy = t.y - s.y;
@@ -202,24 +170,36 @@ HM.runForceLayout = function() {
       t.vx -= fx; t.vy -= fy;
     }
 
+    // v2: Soft directional bias
+    var bandStrength = 0.012;
     for (var i = 0; i < n; i++) {
-      var region = HM.getLayoutRegion(nodes[i].population, W, topMargin, usableW, usableH);
-      nodes[i].vx += (region.cx - nodes[i].x) * 0.018;
-      nodes[i].vy += (region.cy - nodes[i].y) * 0.012;
+      var pop = nodes[i].population;
+      if (!pop) continue;
+      var targetX = margin + pop.xBand * usableW;
+      var targetY = topMargin + pop.yBand * usableH;
+      nodes[i].vx += (targetX - nodes[i].x) * bandStrength;
+      nodes[i].vy += (targetY - nodes[i].y) * bandStrength * 0.2;
     }
 
-    var cx = W / 2, cy = topMargin + usableH * 0.57;
+    // Strong center gravity
+    var cx = W / 2, cy = (H + topMargin) / 2;
     for (var i = 0; i < n; i++) {
-      nodes[i].vx += (cx - nodes[i].x) * 0.008;
-      nodes[i].vy += (cy - nodes[i].y) * 0.006;
+      nodes[i].vx += (cx - nodes[i].x) * 0.02;
+      nodes[i].vy += (cy - nodes[i].y) * 0.02;
     }
 
+    // Apply with temperature clamping
     for (var i = 0; i < n; i++) {
       var vLen = Math.sqrt(nodes[i].vx * nodes[i].vx + nodes[i].vy * nodes[i].vy) || 1;
       var capped = Math.min(vLen, temp);
       nodes[i].x += (nodes[i].vx / vLen) * capped;
       nodes[i].y += (nodes[i].vy / vLen) * capped;
-      HM.constrainToBrain(nodes[i], W, H, margin, topMargin, usableW, usableH);
+      if (nodes[i].x < margin) nodes[i].vx += (margin - nodes[i].x) * 0.5;
+      if (nodes[i].x > W - margin) nodes[i].vx -= (nodes[i].x - (W - margin)) * 0.5;
+      if (nodes[i].y < topMargin) nodes[i].vy += (topMargin - nodes[i].y) * 0.5;
+      if (nodes[i].y > H - margin) nodes[i].vy -= (nodes[i].y - (H - margin)) * 0.5;
+      nodes[i].x = Math.max(20, Math.min(W - 20, nodes[i].x));
+      nodes[i].y = Math.max(topMargin - 20, Math.min(H - 20, nodes[i].y));
     }
 
     temp = Math.max(0.5, temp - cooling);
@@ -278,16 +258,20 @@ HM.initNetwork = function(data, totalNeuronCount) {
   // Assign populations BEFORE layout
   HM.assignPopulations(neuronCount);
 
-  // Seed positions with brain-shaped regions
+  // Seed positions with population bias
   var topMarginInit = 140;
   var marginInit = 60;
   var usableW = W - marginInit * 2;
   var usableH = H - topMarginInit - marginInit;
+  var centerX = W / 2, centerY = topMarginInit + usableH / 2;
   for (var i = 0; i < nodes.length; i++) {
-    var region = HM.getLayoutRegion(nodes[i].population, W, topMarginInit, usableW, usableH);
-    nodes[i].x = region.cx + (Math.random() - 0.5) * region.rx * 1.35;
-    nodes[i].y = region.cy + (Math.random() - 0.5) * region.ry * 1.25;
-    HM.constrainToBrain(nodes[i], W, H, marginInit, topMarginInit, usableW, usableH);
+    var pop = nodes[i].population;
+    if (pop) {
+      var bandX = marginInit + pop.xBand * usableW;
+      var bandY = topMarginInit + pop.yBand * usableH;
+      nodes[i].x = centerX * 0.7 + bandX * 0.3 + (Math.random() - 0.5) * usableW * 0.3;
+      nodes[i].y = centerY * 0.7 + bandY * 0.3 + (Math.random() - 0.5) * usableH * 0.3;
+    }
   }
 
   // Run layout
@@ -324,11 +308,18 @@ HM.layoutAndRender = function() {
   var resizeTop = 140;
   var resizeUsableW = W - resizeMargin * 2;
   var resizeUsableH = H - resizeTop - resizeMargin;
+  var resCX = W / 2, resCY = resizeTop + resizeUsableH / 2;
   for (var i = 0; i < nodes.length; i++) {
-    var region = HM.getLayoutRegion(nodes[i].population, W, resizeTop, resizeUsableW, resizeUsableH);
-    nodes[i].x = region.cx + (Math.random() - 0.5) * region.rx * 1.35;
-    nodes[i].y = region.cy + (Math.random() - 0.5) * region.ry * 1.25;
-    HM.constrainToBrain(nodes[i], W, H, resizeMargin, resizeTop, resizeUsableW, resizeUsableH);
+    var pop = nodes[i].population;
+    if (pop) {
+      var bandX = resizeMargin + pop.xBand * resizeUsableW;
+      var bandY = resizeTop + pop.yBand * resizeUsableH;
+      nodes[i].x = resCX * 0.7 + bandX * 0.3 + (Math.random() - 0.5) * resizeUsableW * 0.3;
+      nodes[i].y = resCY * 0.7 + bandY * 0.3 + (Math.random() - 0.5) * resizeUsableH * 0.3;
+    } else {
+      nodes[i].x = resCX + (Math.random() - 0.5) * resizeUsableW * 0.3;
+      nodes[i].y = resCY + (Math.random() - 0.5) * resizeUsableH * 0.3;
+    }
   }
   HM.runForceLayout();
   HM.renderStatic();

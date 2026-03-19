@@ -24,7 +24,7 @@
         useTestAds: typeof existingAdMob.useTestAds === 'boolean' ? existingAdMob.useTestAds : true,
         interstitialAdUnitId: Object.assign({
           android: '',
-          ios: ''
+          ios: 'ca-app-pub-0897605867387651/8767324684'
         }, existingInterstitialIds)
       }, existingAdMob),
       revenueCat: Object.assign({

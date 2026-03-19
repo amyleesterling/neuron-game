@@ -49,7 +49,7 @@
 	<true/>
 	<!-- AdMob App ID (replace with your real ID for production) -->
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-0897605867387651~1080406353</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

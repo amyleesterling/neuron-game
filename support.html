@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Neuron Snake Support</title>
+  <meta name="description" content="Support information for Neuron Snake." />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #070816;
+      --panel: rgba(16, 20, 38, 0.92);
+      --line: rgba(110, 196, 255, 0.18);
+      --text: #f3f7ff;
+      --muted: #9eb6d3;
+      --accent: #78d7ff;
+      --accent2: #ff7bdd;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(120, 215, 255, 0.14), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(255, 123, 221, 0.12), transparent 28%),
+        var(--bg);
+      color: var(--text);
+    }
+    main {
+      width: min(760px, calc(100% - 32px));
+      margin: 40px auto 72px;
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--panel);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+    }
+    h1, h2 { margin: 0 0 14px; }
+    h1 { font-size: clamp(2rem, 5vw, 3rem); }
+    h2 { margin-top: 28px; font-size: 1.1rem; letter-spacing: 0.04em; }
+    p, li { color: var(--muted); line-height: 1.65; }
+    a { color: var(--accent); }
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: #d7f6ff;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+    }
+    .nav {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">Neuron Snake</div>
+    <h1>Support</h1>
+    <p>Thanks for playing Neuron Snake. If you run into a bug, purchase problem, or gameplay issue, use the links below to get help.</p>
+
+    <h2>Support Links</h2>
+    <ul>
+      <li><a href="https://github.com/amyleesterling/neuron-game/issues">Report an issue on GitHub</a></li>
+      <li><a href="https://neuronsnake.com/privacy.html">Read the privacy policy</a></li>
+      <li><a href="https://neuronsnake.com/">Open the Neuron Snake website</a></li>
+    </ul>
+
+    <h2>Purchase Help</h2>
+    <p>If you bought the one-time Remove Ads upgrade and it does not appear active, open the app and use the <strong>Restore Purchases</strong> option first.</p>
+
+    <h2>What To Include In A Bug Report</h2>
+    <ul>
+      <li>Your device model and iOS version</li>
+      <li>What you were doing when the issue happened</li>
+      <li>Whether the issue involved ads, purchases, leaderboard, or launch problems</li>
+    </ul>
+
+    <div class="nav">
+      <a href="https://neuronsnake.com/">Home</a>
+      <a href="https://neuronsnake.com/privacy.html">Privacy</a>
+    </div>
+  </main>
+</body>
+</html>

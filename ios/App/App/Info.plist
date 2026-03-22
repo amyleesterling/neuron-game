@@ -50,6 +50,8 @@
 	<!-- AdMob App ID (replace with your real ID for production) -->
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-0897605867387651~1080406353</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

@@ -1,6 +1,6 @@
 {
   "name": "neuron-game",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Neuron Snake - like snake, but a neuron",
   "scripts": {
     "build": "node scripts/copy-www.js",

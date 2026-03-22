@@ -3,7 +3,7 @@ var HM = window.HM || {};
 
 HM.LEARN_CARDS = [
   {
-    title: 'What You''re Looking At',
+    title: "What You're Looking At",
     body: 'The Hive Mind is built from all the scored neurons played in Neuron Snake. Each node is one player-grown neuron. Each link is a synapse-style connection.\n\nThis layout is a force-directed graph: related neurons pull together, crowded areas push apart, and the result reveals clusters, bridges, and flow rather than literal anatomy.',
     draw: function(ctx, w, h, t) {
       var seed = 42;

@@ -18,16 +18,16 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 
 /* Stats bar */
 #statsBar { position:fixed; top:48px; left:0; right:0; height:32px; display:flex; align-items:center; justify-content:center; gap:24px; background:rgba(0,0,0,0.8); z-index:99; border-bottom:1px solid rgba(79,195,247,0.08); }
-.hiveStat { font-size:9px; letter-spacing:0.12em; text-transform:uppercase; opacity:0.6; }
-.hiveStat .hsNum { color:#ffe566; font-weight:700; font-size:11px; margin-right:3px; }
+.hiveStat { font-size:11px; letter-spacing:0.12em; text-transform:uppercase; opacity:0.6; }
+.hiveStat .hsNum { color:#ffe566; font-weight:700; font-size:13px; margin-right:3px; }
 
 /* Animal badge */
 #animalBadge { position:fixed; top:80px; left:0; right:0; height:36px; display:flex; align-items:center; justify-content:center; gap:8px; z-index:98; }
 #animalBadge .badgeIcon { font-size:18px; }
-#animalBadge .badgeText { font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:#ffe566; font-weight:700; }
-#animalBadge .badgeBehavior { font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:#ff6b9d; margin-left:4px; }
+#animalBadge .badgeText { font-size:12px; letter-spacing:0.15em; text-transform:uppercase; color:#ffe566; font-weight:700; }
+#animalBadge .badgeBehavior { font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:#ff6b9d; margin-left:4px; }
 #progressWrap { position:fixed; top:116px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:10px; z-index:98; }
-#progressWrap .progLabel { font-size:10px; letter-spacing:0.1em; text-transform:uppercase; opacity:0.55; }
+#progressWrap .progLabel { font-size:11px; letter-spacing:0.1em; text-transform:uppercase; opacity:0.55; }
 #progressWrap .progLabel .progNum { color:#ffe566; font-weight:700; }
 #progressBar { width:140px; height:4px; background:rgba(79,195,247,0.12); border-radius:2px; overflow:hidden; }
 #progressBar .progFill { height:100%; background:linear-gradient(90deg, #4fc3f7, #ffe566); transition:width 0.5s ease; }
@@ -38,8 +38,8 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 #fxCanvas { z-index:2; cursor:crosshair; }
 
 /* Tooltip */
-#tooltip { position:fixed; pointer-events:none; z-index:200; background:rgba(0,0,0,0.92); border:1px solid rgba(79,195,247,0.3); padding:10px 14px; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; display:none; max-width:220px; }
-#tooltip .ttName { color:#4fc3f7; font-weight:700; font-size:12px; margin-bottom:4px; }
+#tooltip { position:fixed; pointer-events:none; z-index:200; background:rgba(0,0,0,0.92); border:1px solid rgba(79,195,247,0.3); padding:10px 14px; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; display:none; max-width:240px; }
+#tooltip .ttName { color:#4fc3f7; font-weight:700; font-size:13px; margin-bottom:4px; }
 #tooltip .ttScore { color:#ffe566; }
 #tooltip .ttDate { opacity:0.4; margin-top:2px; }
 #tooltip .ttPop { margin-top:3px; font-weight:700; }
@@ -377,11 +377,16 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 
   function resize() {
     W = window.innerWidth; H = window.innerHeight;
+    isMobile = W < 768;
     bgCanvas.width = W; bgCanvas.height = H;
     fxCanvas.width = W; fxCanvas.height = H;
   }
   resize();
-  window.addEventListener('resize', function() { resize(); if (nodes.length) { layoutAndRender(); } });
+  var resizeTimeout;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(function() { resize(); if (nodes.length) { layoutAndRender(); } }, 150);
+  });
 
   // ── Data ──
   var nodes = [];   // { x, y, vx, vy, radius, data, prerender, edges[] }
@@ -567,9 +572,10 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
     // Build legend panel
     buildLegend(neuronCount);
 
-    // Prerender mini neurons (with population tint)
+    // Prerender mini neurons (smaller on mobile for speed)
+    var prerenderScale = isMobile ? 3 : 5;
     for (var i = 0; i < nodes.length; i++) {
-      nodes[i].prerender = prerenderNeuron(nodes[i].data, Math.round(nodes[i].radius * 5));
+      nodes[i].prerender = prerenderNeuron(nodes[i].data, Math.round(nodes[i].radius * prerenderScale));
     }
 
     // Render static
@@ -598,35 +604,47 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
       return Math.sqrt(dx * dx + dy * dy);
     }
 
-    // 1. MST via Prim's to guarantee connectivity
-    var inMST = new Array(n);
-    inMST[0] = true;
+    // 1. MST via Prim's with lazy nearest-neighbor tracking (O(n^2) instead of O(n^3))
+    var inMST = new Uint8Array(n);
+    inMST[0] = 1;
     var mstCount = 1;
     var edgeSet = {};
     function edgeKey(a, b) { return Math.min(a, b) + '-' + Math.max(a, b); }
 
+    // For each non-MST node, track nearest MST node distance
+    var nearest = new Float32Array(n);
+    var nearestFrom = new Int32Array(n);
+    for (var j = 1; j < n; j++) {
+      nearest[j] = dist(nodes[0], nodes[j]);
+      nearestFrom[j] = 0;
+    }
+    nearest[0] = Infinity;
+
     while (mstCount < n) {
-      var bestDist = Infinity, bestI = -1, bestJ = -1;
-      for (var i = 0; i < n; i++) {
-        if (!inMST[i]) continue;
-        for (var j = 0; j < n; j++) {
-          if (inMST[j]) continue;
-          var d = dist(nodes[i], nodes[j]);
-          if (d < bestDist) { bestDist = d; bestI = i; bestJ = j; }
-        }
+      // Find the non-MST node closest to the MST
+      var bestDist = Infinity, bestJ = -1;
+      for (var j = 0; j < n; j++) {
+        if (inMST[j]) continue;
+        if (nearest[j] < bestDist) { bestDist = nearest[j]; bestJ = j; }
       }
-      if (bestJ >= 0) {
-        inMST[bestJ] = true;
-        mstCount++;
-        var key = edgeKey(bestI, bestJ);
-        if (!edgeSet[key]) {
-          edgeSet[key] = true;
-          var w = Math.min(nodes[bestI].data.score || 1, nodes[bestJ].data.score || 1);
-          var idx = edges.length;
-          edges.push({ source: bestI, target: bestJ, weight: w });
-          nodes[bestI].edgeIndices.push(idx);
-          nodes[bestJ].edgeIndices.push(idx);
-        }
+      if (bestJ < 0) break;
+      inMST[bestJ] = 1;
+      mstCount++;
+      var bestI = nearestFrom[bestJ];
+      var key = edgeKey(bestI, bestJ);
+      if (!edgeSet[key]) {
+        edgeSet[key] = true;
+        var w = Math.min(nodes[bestI].data.score || 1, nodes[bestJ].data.score || 1);
+        var idx = edges.length;
+        edges.push({ source: bestI, target: bestJ, weight: w });
+        nodes[bestI].edgeIndices.push(idx);
+        nodes[bestJ].edgeIndices.push(idx);
+      }
+      // Update nearest distances for remaining non-MST nodes
+      for (var j = 0; j < n; j++) {
+        if (inMST[j]) continue;
+        var d = dist(nodes[bestJ], nodes[j]);
+        if (d < nearest[j]) { nearest[j] = d; nearestFrom[j] = bestJ; }
       }
     }
 
@@ -712,11 +730,12 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
     }
   }
 
-  // ── Force-directed layout (v2: directional bias) ──
+  // ── Force-directed layout (v2: directional bias, grid-optimized) ──
+  var isMobile = W < 768;
   function runForceLayout() {
     var n = nodes.length;
     var k = Math.sqrt((W * H) / n) * 0.7;
-    var iterations = 250;
+    var iterations = isMobile ? 120 : 250;
     var temp = Math.min(W, H) * 0.15;
     var cooling = temp / iterations;
     var margin = 60;
@@ -724,22 +743,57 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
     var usableW = W - margin * 2;
     var usableH = H - topMargin - margin;
 
+    // Spatial hash grid for O(n) repulsion per iteration
+    var repulseRadius = k * 4;
+    var cellSize = repulseRadius;
+
     for (var iter = 0; iter < iterations; iter++) {
       for (var i = 0; i < n; i++) { nodes[i].vx = 0; nodes[i].vy = 0; }
 
-      // Repulsion
-      var repulseRadius = k * 4;
+      // Build spatial grid
+      var grid = {};
       for (var i = 0; i < n; i++) {
-        for (var j = i + 1; j < n; j++) {
-          var dx = nodes[i].x - nodes[j].x;
-          var dy = nodes[i].y - nodes[j].y;
-          var d = Math.sqrt(dx * dx + dy * dy);
-          if (d > repulseRadius) continue;
-          d = Math.max(d, 1);
-          var force = (k * k) / (d * d) * 2;
-          var fx = (dx / d) * force, fy = (dy / d) * force;
-          nodes[i].vx += fx; nodes[i].vy += fy;
-          nodes[j].vx -= fx; nodes[j].vy -= fy;
+        var gx = Math.floor(nodes[i].x / cellSize);
+        var gy = Math.floor(nodes[i].y / cellSize);
+        var gk = gx + ',' + gy;
+        if (!grid[gk]) grid[gk] = [];
+        grid[gk].push(i);
+      }
+
+      // Repulsion — only check neighboring cells
+      for (var gk in grid) {
+        var cell = grid[gk];
+        var parts = gk.split(',');
+        var gx0 = parseInt(parts[0]), gy0 = parseInt(parts[1]);
+        // Check this cell + 4 neighbors (avoid double-counting)
+        var neighborKeys = [
+          gk,
+          (gx0+1)+','+gy0,
+          (gx0-1)+','+(gy0+1),
+          gx0+','+(gy0+1),
+          (gx0+1)+','+(gy0+1)
+        ];
+        for (var nk = 0; nk < neighborKeys.length; nk++) {
+          var other = grid[neighborKeys[nk]];
+          if (!other) continue;
+          var sameCell = neighborKeys[nk] === gk;
+          for (var ci = 0; ci < cell.length; ci++) {
+            var startJ = sameCell ? ci + 1 : 0;
+            var ni = cell[ci];
+            for (var cj = startJ; cj < other.length; cj++) {
+              var nj = other[cj];
+              var dx = nodes[ni].x - nodes[nj].x;
+              var dy = nodes[ni].y - nodes[nj].y;
+              var d2 = dx * dx + dy * dy;
+              if (d2 > repulseRadius * repulseRadius) continue;
+              var d = Math.sqrt(d2);
+              d = Math.max(d, 1);
+              var force = (k * k) / (d * d) * 2;
+              var fx = (dx / d) * force, fy = (dy / d) * force;
+              nodes[ni].vx += fx; nodes[ni].vy += fy;
+              nodes[nj].vx -= fx; nodes[nj].vy -= fy;
+            }
+          }
         }
       }
 
@@ -958,14 +1012,17 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
     for (var i = 0; i < nodes.length; i++) {
       var n = nodes[i];
       var pc = n.population ? n.population.color : [79,195,247]; // default cyan
-      // Outer glow — population colored, stronger
-      var glowR = n.radius * 3;
-      var glow = bgCtx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
-      glow.addColorStop(0, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0.3)');
-      glow.addColorStop(0.5, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0.1)');
-      glow.addColorStop(1, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0)');
-      bgCtx.beginPath(); bgCtx.arc(n.x, n.y, glowR, 0, Math.PI * 2);
-      bgCtx.fillStyle = glow; bgCtx.fill();
+
+      // Outer glow — skip on mobile (expensive radial gradients per node)
+      if (!isMobile) {
+        var glowR = n.radius * 3;
+        var glow = bgCtx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
+        glow.addColorStop(0, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0.3)');
+        glow.addColorStop(0.5, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0.1)');
+        glow.addColorStop(1, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0)');
+        bgCtx.beginPath(); bgCtx.arc(n.x, n.y, glowR, 0, Math.PI * 2);
+        bgCtx.fillStyle = glow; bgCtx.fill();
+      }
 
       // Mini neuron
       if (n.prerender) {
@@ -981,8 +1038,8 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
         bgCtx.stroke();
       }
 
-      // v2: Hub node extra ring — these "important weirdos" get a distinctive outer ring
-      if (n._isHub) {
+      // v2: Hub node extra ring (skip on mobile)
+      if (n._isHub && !isMobile) {
         bgCtx.beginPath(); bgCtx.arc(n.x, n.y, n.radius + 5, 0, Math.PI * 2);
         bgCtx.strokeStyle = 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0.35)';
         bgCtx.lineWidth = 1;
@@ -1003,20 +1060,20 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
       ly = Math.max(145, ly); // don't overlap header
 
       // Background pill
-      bgCtx.font = '700 10px "Courier New", monospace';
+      bgCtx.font = '700 13px "Courier New", monospace';
       var tw = bgCtx.measureText(pop.name).width;
       bgCtx.fillStyle = 'rgba(' + pop.color[0] + ',' + pop.color[1] + ',' + pop.color[2] + ',0.12)';
       bgCtx.beginPath();
-      bgCtx.roundRect(lx - tw/2 - 6, ly - 8, tw + 12, 16, 3);
+      bgCtx.roundRect(lx - tw/2 - 8, ly - 10, tw + 16, 20, 4);
       bgCtx.fill();
       // Label text
-      bgCtx.fillStyle = 'rgba(' + pop.color[0] + ',' + pop.color[1] + ',' + pop.color[2] + ',0.8)';
-      bgCtx.fillText(pop.name, lx, ly + 4);
+      bgCtx.fillStyle = 'rgba(' + pop.color[0] + ',' + pop.color[1] + ',' + pop.color[2] + ',0.85)';
+      bgCtx.fillText(pop.name, lx, ly + 5);
 
       // Role indicator underneath
-      bgCtx.font = '9px "Courier New", monospace';
-      bgCtx.fillStyle = 'rgba(' + pop.color[0] + ',' + pop.color[1] + ',' + pop.color[2] + ',0.3)';
-      bgCtx.fillText(pop.role.toUpperCase(), lx, ly + 16);
+      bgCtx.font = '10px "Courier New", monospace';
+      bgCtx.fillStyle = 'rgba(' + pop.color[0] + ',' + pop.color[1] + ',' + pop.color[2] + ',0.35)';
+      bgCtx.fillText(pop.role.toUpperCase(), lx, ly + 18);
     }
   }
 
@@ -1112,9 +1169,16 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
     autoFireTimer = setTimeout(doFire, currentTier.fireInterval * 0.4 + jitter);
   }
 
-  // ── Animation loop ──
+  // ── Animation loop (throttled on mobile) ──
   var maxEdgeWeight = 1;
-  function animLoop() {
+  var lastFrame = 0;
+  var frameInterval = isMobile ? 50 : 0; // ~20fps on mobile, uncapped on desktop
+  function animLoop(timestamp) {
+    if (frameInterval && timestamp - lastFrame < frameInterval) {
+      requestAnimationFrame(animLoop);
+      return;
+    }
+    lastFrame = timestamp;
     fxCtx.clearRect(0, 0, W, H);
 
     if (edges.length > 0 && maxEdgeWeight === 1) {
@@ -1207,15 +1271,17 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
       fxCtx.fillStyle = 'rgba(' + sigColBright[0] + ',' + sigColBright[1] + ',' + sigColBright[2] + ',' + Math.min(1, sig.intensity * 1.5) + ')';
       fxCtx.fill();
 
-      // Trail
-      for (var t = 1; t <= 3; t++) {
-        var tp = sig.progress - t * 0.03;
-        if (tp < 0) continue;
-        var tx = sx + (ex - sx) * tp;
-        var ty = sy + (ey - sy) * tp;
-        fxCtx.beginPath(); fxCtx.arc(tx, ty, dotR * (1 - t * 0.2), 0, Math.PI * 2);
-        fxCtx.fillStyle = 'rgba(' + sigCol[0] + ',' + sigCol[1] + ',' + sigCol[2] + ',' + (sig.intensity * (0.5 - t * 0.12)) + ')';
-        fxCtx.fill();
+      // Trail (skip on mobile for performance)
+      if (!isMobile) {
+        for (var t = 1; t <= 3; t++) {
+          var tp = sig.progress - t * 0.03;
+          if (tp < 0) continue;
+          var tx = sx + (ex - sx) * tp;
+          var ty = sy + (ey - sy) * tp;
+          fxCtx.beginPath(); fxCtx.arc(tx, ty, dotR * (1 - t * 0.2), 0, Math.PI * 2);
+          fxCtx.fillStyle = 'rgba(' + sigCol[0] + ',' + sigCol[1] + ',' + sigCol[2] + ',' + (sig.intensity * (0.5 - t * 0.12)) + ')';
+          fxCtx.fill();
+        }
       }
     }
 
@@ -1225,12 +1291,19 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
       var nd = nodes[fire.nodeIdx];
       var pc = nd.population ? nd.population.color : [200,240,255];
       var glowR = nd.radius * 3 * fire.intensity;
-      var glow = fxCtx.createRadialGradient(nd.x, nd.y, 0, nd.x, nd.y, glowR);
-      glow.addColorStop(0, 'rgba(' + Math.min(255, pc[0]+55) + ',' + Math.min(255, pc[1]+55) + ',' + Math.min(255, pc[2]+55) + ',' + (fire.intensity * 0.8) + ')');
-      glow.addColorStop(0.4, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',' + (fire.intensity * 0.4) + ')');
-      glow.addColorStop(1, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0)');
-      fxCtx.beginPath(); fxCtx.arc(nd.x, nd.y, glowR, 0, Math.PI * 2);
-      fxCtx.fillStyle = glow; fxCtx.fill();
+      if (isMobile) {
+        // Simpler solid glow on mobile
+        fxCtx.beginPath(); fxCtx.arc(nd.x, nd.y, glowR, 0, Math.PI * 2);
+        fxCtx.fillStyle = 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',' + (fire.intensity * 0.4) + ')';
+        fxCtx.fill();
+      } else {
+        var glow = fxCtx.createRadialGradient(nd.x, nd.y, 0, nd.x, nd.y, glowR);
+        glow.addColorStop(0, 'rgba(' + Math.min(255, pc[0]+55) + ',' + Math.min(255, pc[1]+55) + ',' + Math.min(255, pc[2]+55) + ',' + (fire.intensity * 0.8) + ')');
+        glow.addColorStop(0.4, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',' + (fire.intensity * 0.4) + ')');
+        glow.addColorStop(1, 'rgba(' + pc[0] + ',' + pc[1] + ',' + pc[2] + ',0)');
+        fxCtx.beginPath(); fxCtx.arc(nd.x, nd.y, glowR, 0, Math.PI * 2);
+        fxCtx.fillStyle = glow; fxCtx.fill();
+      }
     }
 
     // Hovered node highlight
@@ -1252,7 +1325,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
       fxCtx.stroke();
       // Name label — population colored
       var hpc = hn.population ? hn.population.color : [79,195,247];
-      fxCtx.font = '700 10px "Courier New", monospace';
+      fxCtx.font = '700 12px "Courier New", monospace';
       fxCtx.fillStyle = 'rgb(' + hpc[0] + ',' + hpc[1] + ',' + hpc[2] + ')';
       fxCtx.textAlign = 'center';
       fxCtx.fillText((hn.data.name || 'ANON').toUpperCase(), hn.x, hn.y - hn.radius - 10);

@@ -3,8 +3,8 @@ var HM = window.HM || {};
 
 HM.LEARN_CARDS = [
   {
-    title: 'What Is the Hive Mind?',
-    body: 'A living network built from player-grown neurons. Each node is a neuron. Each link is a synapse-style connection. Together, they form a brain-inspired web assembled not by biologists, but by you.\n\nSignals drift directionally: from sensing, through processing, toward action.',
+    title: 'What You''re Looking At',
+    body: 'The Hive Mind is built from all the scored neurons played in Neuron Snake. Each node is one player-grown neuron. Each link is a synapse-style connection.\n\nThis layout is a force-directed graph: related neurons pull together, crowded areas push apart, and the result reveals clusters, bridges, and flow rather than literal anatomy.',
     draw: function(ctx, w, h, t) {
       var seed = 42;
       function srand() { seed = (seed * 16807 + 0) % 2147483647; return (seed - 1) / 2147483646; }
@@ -238,8 +238,8 @@ HM.LEARN_CARDS = [
     }
   },
   {
-    title: 'Why This Graph Moves',
-    body: 'A force-directed graph shows structure, not anatomy. Think of it as a subway map for thought: not the physical tunnels, but the routes, junctions, and traffic that make the whole system work.\n\nThe motion reveals clusters, hubs, and hidden highways of influence \u2014 plus a loose left-to-right flow, from sensing to doing, just like a real nervous system.',
+    title: 'Why It Looks Like That',
+    body: 'A force-directed graph shows structure, not anatomy. Think of it as a subway map for thought: not the literal tissue, but the routes, junctions, and traffic that make the whole system work.\n\nThe motion helps you spot clusters, high-score hubs, and the loose left-to-right flow from sensing to doing. So if it looks a little alien, that is actually the point.',
     draw: function(ctx, w, h, t) {
       var lines = [
         { col: [79,195,247], pts: [[30,50],[100,50],[160,90],[250,90],[330,50],[w-30,50]] },

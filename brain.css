@@ -65,6 +65,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
 #speciesPanel .speciesStatus { font-size:10px; letter-spacing:0.12em; text-transform:uppercase; }
 #speciesPanel .speciesHint { border-bottom:none; padding-top:2px; }
 #speciesPanel .speciesHint .speciesStatus { color:rgba(255,229,102,0.78); }
+#legendPanel .panelIntro { font-size:12px; line-height:1.7; letter-spacing:0.03em; color:rgba(160,216,240,0.78); margin:-2px 0 16px; padding:0 0 14px; border-bottom:1px solid rgba(79,195,247,0.08); }
 #speciesPanel .speciesUnlocked .speciesStatus { color:#4caf50; }
 #speciesPanel .speciesCurrent { border-bottom-color:rgba(255,229,102,0.14); background:rgba(255,229,102,0.04); padding:10px 10px 12px; margin:0 -10px 12px; }
 #speciesPanel .speciesCurrent .speciesStatus { color:#ffe566; }
@@ -142,4 +143,5 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; font-fam
   .lc-canvas-slide canvas { height:160px; }
   .lc-title { font-size:12px; }
   .lc-body { font-size:12px; }
+  #legendPanel .panelIntro { font-size:11px; line-height:1.65; }
 }
